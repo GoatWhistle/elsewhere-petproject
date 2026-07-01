@@ -1,0 +1,964 @@
+openapi: 3.1.0
+
+info:
+  title: Elsewhere Public API
+  version: 0.1.0-draft
+  summary: Dream → Futures → Simulate → Forecast → Plan
+  description: |
+    Contract between the Elsewhere web client and the Elsewhere backend.
+
+    **Status: DRAFT.** This is the contract freeze described in
+    [DEC-008](../00_project/decision_log.md) — five people build in parallel against it, so it exists
+    before the implementation, not after.
+
+    Design rules that this document deliberately encodes (rationale in `api_principles.md`):
+
+    1. **Money is an integer in minor units plus a currency.** Never a float. Currency is RUB (DEC-007).
+    2. **Every price component states whether it is bookable or an estimate.** The hotel is bookable through us;
+       the flight price is real cached market data but not a quote we can honour; the transfer is modeled.
+       This is a product honesty requirement (see `01_product/futures.md`), so it lives in the schema rather
+       than in UI copy.
+    3. **Anything that can be slow is a job.** Future generation, simulation, and mitigation return `202` with a
+       job reference. Nothing important blocks an HTTP request.
+    4. **Futures are versioned and immutable.** A simulation produces a *new version* with a delta pointing at its
+       parent, so the user can always go back and the client can always diff.
+    5. **Scores and risks are decomposed, never bare numbers.** An Experience Match without contributions, or a
+       risk without evidence, is not representable in this schema — by design.
+    6. **Every inferred thing carries provenance and confidence.** The client must be able to show the user what
+       the system assumed and how sure it is.
+    7. **The output is a plan, not a purchase.** Elsewhere books nothing and takes no money (DEC-018).
+       A Future is a whole trip — travel, stay, transfer, local mobility — and every price component says
+       whether its number was observed or modeled. The total is an estimate and is labeled as one.
+
+    Open questions this draft encodes rather than decides: OQ-H (identity), OQ-I (origin/dates capture),
+    OQ-G (whether a simulation updates the Travel DNA).
+
+servers:
+  - url: https://api.elsewhere.local/v1
+    description: Local development
+
+tags:
+  - name: Planning
+    description: Dream capture and Travel DNA
+  - name: Futures
+    description: Generation, retrieval, simulation
+  - name: Forecast
+    description: Evidence-based risks and mitigations
+  - name: Jobs
+    description: Async work
+
+paths:
+
+  /planning-sessions:
+    post:
+      tags: [Planning]
+      summary: Start a planning session from a Dream
+      description: |
+        Accepts the user's free-text Dream plus the minimum structured fields no provider query can do without
+        (origin, date window, party). See OQ-I — capturing these as fields rather than inferring them is a
+        deliberate, revisitable choice.
+
+        Returns a draft Travel DNA immediately, together with any clarifying questions the system wants answered
+        before it commits to high-impact inferences.
+      operationId: createPlanningSession
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DreamInput' }
+      responses:
+        '201':
+          description: Session created with a draft Travel DNA
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlanningSession' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /planning-sessions/{sessionId}:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      tags: [Planning]
+      summary: Get a planning session
+      operationId: getPlanningSession
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PlanningSession' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /planning-sessions/{sessionId}/travel-dna:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    patch:
+      tags: [Planning]
+      summary: Correct the Travel DNA
+      description: |
+        The user can see and fix what the system believes about them. Any element edited here becomes
+        `provenance: confirmed` (or `stated`), and its confidence is set to 1.0 — the user is authoritative
+        about their own preferences.
+      operationId: updateTravelDna
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                elements:
+                  type: array
+                  items: { $ref: '#/components/schemas/TravelDnaElementInput' }
+              required: [elements]
+      responses:
+        '200':
+          description: Updated Travel DNA
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TravelDna' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /planning-sessions/{sessionId}/clarifications:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    post:
+      tags: [Planning]
+      summary: Answer the system's clarifying questions
+      operationId: answerClarifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                answers:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      question_id: { type: string }
+                      value: {}
+                    required: [question_id, value]
+              required: [answers]
+      responses:
+        '200':
+          description: Travel DNA after applying the answers
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TravelDna' }
+
+  /planning-sessions/{sessionId}/futures:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    post:
+      tags: [Futures]
+      summary: Generate Futures
+      description: |
+        Kicks off candidate retrieval, hard-constraint filtering, scoring, and diversity selection.
+        Always asynchronous — provider round-trips and scoring are not request-latency work.
+      operationId: generateFutures
+      responses:
+        '202':
+          description: Generation started
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+    get:
+      tags: [Futures]
+      summary: List the current Futures for the session
+      description: |
+        Returns the latest version of each Future. May contain **fewer than three** entries: the system returns
+        two with an explanation rather than padding with near-duplicates (see `01_product/futures.md`).
+        `diversity_note` explains the shape of the set.
+      operationId: listFutures
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  futures:
+                    type: array
+                    items: { $ref: '#/components/schemas/Future' }
+                  diversity_note:
+                    type: [string, 'null']
+                    description: Why this set differs the way it does, or why it is smaller than requested.
+                required: [futures]
+
+  /futures/{futureId}:
+    parameters:
+      - $ref: '#/components/parameters/FutureId'
+    get:
+      tags: [Futures]
+      summary: Get one Future version
+      operationId: getFuture
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Future' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /futures/{futureId}/simulations:
+    parameters:
+      - $ref: '#/components/parameters/FutureId'
+    post:
+      tags: [Futures]
+      summary: Modify the future (sliders or natural language)
+      description: |
+        Produces a **new Future version** whose `delta` explains what changed and why. The original version is
+        never mutated.
+
+        If no valid result exists under the requested modification, the job completes with
+        `result.kind = "no_solution"` and carries the nearest reachable alternatives — the system says
+        "nothing under X keeps both the sea and the quiet, here is the closest", it does not silently return
+        the best available and imply success.
+      operationId: simulateFuture
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SimulationRequest' }
+      responses:
+        '202':
+          description: Simulation started
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /futures/{futureId}/forecast:
+    parameters:
+      - $ref: '#/components/parameters/FutureId'
+    get:
+      tags: [Forecast]
+      summary: Get the Experience Forecast for a Future
+      description: |
+        Risks relevant to *this* Travel DNA, each with evidence and recency.
+
+        `coverage` states which risk types could actually be assessed and which could not, and why. Absence of
+        evidence is reported as absence of evidence — never as absence of risk.
+      operationId: getForecast
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Forecast' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /futures/{futureId}/forecast/risks/{riskId}/mitigations/{mitigationId}:
+    parameters:
+      - $ref: '#/components/parameters/FutureId'
+      - name: riskId
+        in: path
+        required: true
+        schema: { type: string }
+      - name: mitigationId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      tags: [Forecast]
+      summary: Apply a mitigation ("Fix this risk")
+      description: |
+        A mitigation is a simulator operation: it changes the Future, its price, its Experience Match, and
+        possibly introduces new risks. It therefore returns a job producing a new Future version with a delta,
+        exactly like any other simulation.
+      operationId: applyMitigation
+      responses:
+        '202':
+          description: Mitigation started
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+
+  /jobs/{jobId}:
+    parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Jobs]
+      summary: Poll a job
+      operationId: getJob
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Job' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+
+components:
+
+  parameters:
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    FutureId:
+      name: futureId
+      in: path
+      required: true
+      description: Identifies one **version** of a Future. Versions are immutable.
+      schema: { type: string, format: uuid }
+
+  responses:
+    Problem:
+      description: Error
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+  schemas:
+
+    Problem:
+      type: object
+      description: RFC 9457 problem details.
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+      required: [type, title, status]
+
+    Money:
+      type: object
+      additionalProperties: false
+      description: |
+        Integer minor units plus currency. Never a float — prices are summed, diffed, and shown to users,
+        and floating point is not acceptable for any of those.
+      properties:
+        amount_minor:
+          type: integer
+          description: e.g. 154000 = 1540.00 RUB
+        currency:
+          type: string
+          enum: [RUB]
+      required: [amount_minor, currency]
+
+    Confidence:
+      type: number
+      minimum: 0
+      maximum: 1
+      description: How strongly the evidence supports this. Shown to the user; never hidden to look cleaner.
+
+    DreamInput:
+      type: object
+      additionalProperties: false
+      properties:
+        dream_text:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          description: The user's own words. The product's real input.
+        origin:
+          type: string
+          description: |
+            IATA city code of the origin. Required because no flight price and no realistic trip can be
+            computed without it (OQ-I).
+        date_window:
+          $ref: '#/components/schemas/DateWindow'
+        party:
+          $ref: '#/components/schemas/Party'
+        budget_total:
+          oneOf:
+            - $ref: '#/components/schemas/Money'
+            - type: 'null'
+          description: Optional here because the Dream text often contains it; extraction fills it in.
+      required: [dream_text, origin, date_window, party]
+
+    DateWindow:
+      type: object
+      additionalProperties: false
+      description: A range to search within, plus the trip length — not fixed dates. Flexibility is the point.
+      properties:
+        earliest: { type: string, format: date }
+        latest: { type: string, format: date }
+        nights_min: { type: integer, minimum: 1 }
+        nights_max: { type: integer, minimum: 1 }
+      required: [earliest, latest, nights_min, nights_max]
+
+    Party:
+      type: object
+      additionalProperties: false
+      properties:
+        adults: { type: integer, minimum: 1, maximum: 2 }
+      required: [adults]
+      description: MVP supports 1–2 adults (A-004). Children and groups are post-MVP, deliberately.
+
+    PlanningSession:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        dream_text: { type: string }
+        travel_dna: { $ref: '#/components/schemas/TravelDna' }
+        clarifications:
+          type: array
+          items: { $ref: '#/components/schemas/Clarification' }
+          description: High-impact ambiguities the system wants confirmed before it assumes.
+      required: [id, created_at, dream_text, travel_dna, clarifications]
+
+    TravelDna:
+      type: object
+      additionalProperties: false
+      description: |
+        The structured model of what matters to this user for this trip.
+        Not filters — see `01_product/travel_dna.md` for the distinction and the degeneration test.
+      properties:
+        elements:
+          type: array
+          items: { $ref: '#/components/schemas/TravelDnaElement' }
+        unmatched_intent:
+          type: array
+          items: { type: string }
+          description: |
+            Things the user said that the taxonomy could not represent. Surfaced to the user rather than
+            silently dropped — silently dropping intent is how this degenerates into filters.
+      required: [elements, unmatched_intent]
+
+    TravelDnaElement:
+      type: object
+      additionalProperties: false
+      properties:
+        dimension: { $ref: '#/components/schemas/Dimension' }
+        kind:
+          type: string
+          enum: [hard_constraint, preference, aversion]
+        target:
+          description: |
+            Constraint bound or preferred level. Shape depends on the dimension
+            (a Money for budget, a 0..1 level for quiet, a boolean for car_free).
+        weight:
+          type: [number, 'null']
+          minimum: 0
+          maximum: 1
+          description: Relative importance. Null for hard constraints.
+        tolerance:
+          type: [number, 'null']
+          description: How far a soft constraint may be violated before the penalty becomes prohibitive.
+        provenance:
+          type: string
+          enum: [stated, inferred, confirmed, default]
+          description: |
+            Decides behavior, not just bookkeeping — an *inferred* hard constraint should be confirmed
+            before it silently disqualifies destinations.
+        confidence: { $ref: '#/components/schemas/Confidence' }
+      required: [dimension, kind, provenance, confidence]
+
+    TravelDnaElementInput:
+      type: object
+      additionalProperties: false
+      properties:
+        dimension: { $ref: '#/components/schemas/Dimension' }
+        kind:
+          type: string
+          enum: [hard_constraint, preference, aversion]
+        target: {}
+        weight: { type: [number, 'null'], minimum: 0, maximum: 1 }
+      required: [dimension, kind]
+
+    Dimension:
+      type: string
+      description: |
+        Fixed taxonomy for MVP. A fixed set is scoreable, explainable, and debuggable; anything the user says that
+        falls outside it goes to `unmatched_intent` where the user can see it.
+      enum:
+        - total_budget
+        - trip_length
+        - dates
+        - sea_access
+        - climate_warm
+        - quiet
+        - food_quality
+        - walkability
+        - nature_vs_city
+        - crowds
+        - nightlife
+        - comfort
+        - car_free
+        - transfer_simplicity
+
+    Clarification:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        dimension: { $ref: '#/components/schemas/Dimension' }
+        question: { type: string }
+        why_it_matters:
+          type: string
+          description: Shown to the user. We ask only when impact × ambiguity is high, and we say why.
+        options:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              value: {}
+              label: { type: string }
+            required: [value, label]
+      required: [id, question, why_it_matters]
+
+    Future:
+      type: object
+      additionalProperties: false
+      description: One coherent candidate version of the user's trip. Immutable; a simulation creates a new version.
+      properties:
+        id: { type: string, format: uuid }
+        lineage_id:
+          type: string
+          format: uuid
+          description: Stable across versions of the same Future, so the client can group and diff them.
+        version: { type: integer, minimum: 1 }
+        parent_id:
+          type: [string, 'null']
+          format: uuid
+        created_at: { type: string, format: date-time }
+        expires_at:
+          type: string
+          format: date-time
+          description: |
+            After this the observed fares have aged. The client shows the age rather than pretending the
+            number is current; the modeled room rate does not decay.
+        destination: { $ref: '#/components/schemas/Destination' }
+        check_in: { type: string, format: date }
+        check_out: { type: string, format: date }
+        accommodation: { $ref: '#/components/schemas/Accommodation' }
+        logistics: { $ref: '#/components/schemas/Logistics' }
+        price: { $ref: '#/components/schemas/PriceBreakdown' }
+        match: { $ref: '#/components/schemas/ExperienceMatch' }
+        why_this_exists:
+          type: string
+          description: One sentence. If we cannot say why a Future is in the set, it should not be in the set.
+        benefits:
+          type: array
+          items: { type: string }
+        compromises:
+          type: array
+          items: { type: string }
+        delta:
+          oneOf:
+            - $ref: '#/components/schemas/Delta'
+            - type: 'null'
+          description: Present on versions produced by a simulation or a mitigation.
+        forecast_summary:
+          type: array
+          items: { $ref: '#/components/schemas/RiskSummary' }
+      required:
+        [id, lineage_id, version, created_at, expires_at, destination, check_in, check_out,
+         accommodation, logistics, price, match, why_this_exists, benefits, compromises]
+
+    Logistics:
+      type: object
+      additionalProperties: false
+      description: |
+        How the trip actually works. Without this a Future is a hotel card, not a trip — and the Simulator
+        cannot trade across travel, location, and comfort.
+      properties:
+        outbound: { $ref: '#/components/schemas/TravelLeg' }
+        inbound: { $ref: '#/components/schemas/TravelLeg' }
+        airport_transfer:
+          type: object
+          additionalProperties: false
+          properties:
+            mode: { type: string, enum: [private, shared, public, walk] }
+            duration_min: { type: integer }
+            note: { type: string }
+          required: [mode, duration_min]
+        local_mobility:
+          type: object
+          additionalProperties: false
+          description: A stated assumption about getting around, not a booked service.
+          properties:
+            assumption: { type: string, description: 'e.g. "everything on foot, two taxis"' }
+            walkable: { type: boolean }
+          required: [assumption]
+      required: [outbound, inbound, airport_transfer, local_mobility]
+
+    TravelLeg:
+      type: object
+      additionalProperties: false
+      properties:
+        origin: { type: string, description: IATA code }
+        destination: { type: string, description: IATA code }
+        depart_at: { type: string, format: date-time }
+        arrive_at: { type: string, format: date-time }
+        carrier: { type: [string, 'null'] }
+        stops: { type: integer, minimum: 0 }
+        duration_min: { type: integer }
+        as_of:
+          type: string
+          format: date-time
+          description: When the fare was observed. A stale fare must not be shown as current.
+        booking_url: { type: [string, 'null'], format: uri }
+      required: [origin, destination, depart_at, arrive_at, stops, duration_min, as_of]
+
+    Destination:
+      type: object
+      additionalProperties: false
+      properties:
+        city_code: { type: string, description: IATA city code }
+        name: { type: string }
+        country: { type: string }
+        coordinates: { $ref: '#/components/schemas/Coordinates' }
+      required: [city_code, name, country]
+
+    Coordinates:
+      type: object
+      additionalProperties: false
+      properties:
+        lat: { type: number }
+        lon: { type: number }
+      required: [lat, lon]
+
+    Accommodation:
+      type: object
+      additionalProperties: false
+      properties:
+        catalogue_id: { type: string }
+        name: { type: string }
+        room_name: { type: string }
+        handoff_url:
+          type: [string, 'null']
+          format: uri
+          description: Convenience link to look this property up. Elsewhere books nothing.
+        coordinates: { $ref: '#/components/schemas/Coordinates' }
+        cancellation:
+          $ref: '#/components/schemas/CancellationTerms'
+        distance_to_sea_m: { type: [integer, 'null'] }
+        distance_to_centre_m: { type: [integer, 'null'] }
+      required: [catalogue_id, name, room_name]
+
+    CancellationTerms:
+      type: object
+      additionalProperties: false
+      description: Part of the offer, shown at the decision point — never fine print.
+      properties:
+        refundable: { type: boolean }
+        free_until: { type: [string, 'null'], format: date-time }
+        summary: { type: string }
+      required: [refundable, summary]
+
+    PriceBreakdown:
+      type: object
+      additionalProperties: false
+      description: |
+        The estimated cost of the whole trip. The user reasons about one number; we owe them one number **and**
+        an honest split of where each part came from. Fares are observed; the room rate, transfer, and local
+        mobility are modeled (DEC-018).
+      properties:
+        total: { $ref: '#/components/schemas/Money' }
+        components:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/PriceComponent' }
+      required: [total, components]
+
+    PriceComponent:
+      type: object
+      additionalProperties: false
+      properties:
+        kind:
+          type: string
+          enum: [travel, accommodation, transfer, local_mobility]
+        amount: { $ref: '#/components/schemas/Money' }
+        fulfilment:
+          type: string
+          enum: [estimate, modeled]
+          description: |
+            `estimate` — a real observed market price we cannot sell (flight fare).
+            `modeled` — generated by us from a defined basis (room rate, calibrated on observed price levels;
+            transfer, private vs shared). Nothing is bookable through Elsewhere.
+        source:
+          type: string
+          description: Which system the number came from, for honesty and for debugging.
+        handoff_url:
+          type: [string, 'null']
+          format: uri
+          description: Convenience link for the user who wants to go and book this themselves. Not a funnel step.
+        as_of:
+          type: [string, 'null']
+          format: date-time
+          description: When the price was observed. Cached flight prices expire; stale ones must not be shown as current.
+      required: [kind, amount, fulfilment]
+
+    ExperienceMatch:
+      type: object
+      additionalProperties: false
+      description: |
+        Deterministic and decomposable. A bare number is not representable here — the simulator's whole value is
+        "92% → 90%, and here is which dimension moved", which an opaque score cannot support.
+      properties:
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+        confidence: { $ref: '#/components/schemas/Confidence' }
+        contributions:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/MatchContribution' }
+        unscored_dimensions:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              dimension: { $ref: '#/components/schemas/Dimension' }
+              reason: { type: string, description: Why no data — never silently scored as neutral. }
+            required: [dimension, reason]
+      required: [score, confidence, contributions, unscored_dimensions]
+
+    MatchContribution:
+      type: object
+      additionalProperties: false
+      properties:
+        dimension: { $ref: '#/components/schemas/Dimension' }
+        satisfaction: { type: number, minimum: 0, maximum: 1 }
+        weight: { type: number, minimum: 0, maximum: 1 }
+        contribution:
+          type: number
+          description: Signed. Aversion penalties are negative — a crowd-hating user is harmed by crowds, not merely unrewarded.
+        confidence: { $ref: '#/components/schemas/Confidence' }
+        explanation: { type: string }
+      required: [dimension, satisfaction, weight, contribution, confidence]
+
+    SimulationRequest:
+      type: object
+      additionalProperties: false
+      description: Exactly one of `adjustments` or `instruction`.
+      properties:
+        adjustments:
+          type: array
+          items: { $ref: '#/components/schemas/Adjustment' }
+        instruction:
+          type: string
+          maxLength: 1000
+          description: e.g. "make it cheaper without damaging anything important to me"
+        persist_to_travel_dna:
+          type: boolean
+          default: false
+          description: |
+            Whether this modification updates the session's Travel DNA or applies only to this Future.
+            Unresolved product question (OQ-G) — exposed as a flag so the client is not silently guessing.
+      oneOf:
+        - required: [adjustments]
+        - required: [instruction]
+
+    Adjustment:
+      type: object
+      additionalProperties: false
+      description: |
+        A control maps to a defined model change, never to a re-sort. `direction` shifts the target/weight on
+        the named dimension.
+      properties:
+        dimension: { $ref: '#/components/schemas/Dimension' }
+        direction:
+          type: string
+          enum: [increase, decrease]
+        magnitude:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.25
+      required: [dimension, direction]
+
+    Delta:
+      type: object
+      additionalProperties: false
+      description: The deliverable of a simulation. What changed, why, what it cost, and what it did to risk.
+      properties:
+        from_future_id: { type: string, format: uuid }
+        price_before: { $ref: '#/components/schemas/Money' }
+        price_after: { $ref: '#/components/schemas/Money' }
+        price_change: { $ref: '#/components/schemas/Money' }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/DeltaItem' }
+        match_before: { type: number }
+        match_after: { type: number }
+        dimension_changes:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              dimension: { $ref: '#/components/schemas/Dimension' }
+              change: { type: string, enum: [improved, worsened, unchanged] }
+            required: [dimension, change]
+        new_risks:
+          type: array
+          items: { $ref: '#/components/schemas/RiskSummary' }
+          description: |
+            Frequently forgotten and the place real harm hides — a cheaper road-facing room saves money and
+            introduces a noise risk for a user who asked for quiet.
+        resolved_risks:
+          type: array
+          items: { $ref: '#/components/schemas/RiskSummary' }
+        explanation: { type: string }
+      required: [from_future_id, price_before, price_after, price_change, items,
+                 match_before, match_after, dimension_changes, new_risks, resolved_risks]
+
+    DeltaItem:
+      type: object
+      additionalProperties: false
+      properties:
+        description: { type: string, description: 'e.g. "beachfront hotel → 6 minutes from the sea"' }
+        amount: { $ref: '#/components/schemas/Money' }
+        relaxed_dimension:
+          oneOf:
+            - $ref: '#/components/schemas/Dimension'
+            - type: 'null'
+          description: Which preference was traded away to achieve this, so the user can judge whether it mattered.
+      required: [description, amount]
+
+    NoSolution:
+      type: object
+      additionalProperties: false
+      description: Returned when the requested modification has no valid answer. We say so, with the nearest reachable options.
+      properties:
+        reason: { type: string }
+        unsatisfiable_constraints:
+          type: array
+          items: { $ref: '#/components/schemas/Dimension' }
+        nearest_alternatives:
+          type: array
+          items: { $ref: '#/components/schemas/Future' }
+      required: [reason, unsatisfiable_constraints, nearest_alternatives]
+
+    Forecast:
+      type: object
+      additionalProperties: false
+      properties:
+        future_id: { type: string, format: uuid }
+        generated_at: { type: string, format: date-time }
+        risks:
+          type: array
+          items: { $ref: '#/components/schemas/RiskItem' }
+        coverage:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              risk_type: { $ref: '#/components/schemas/RiskType' }
+              assessed: { type: boolean }
+              reason: { type: string, description: When not assessed, why. Absence of evidence is not absence of risk. }
+            required: [risk_type, assessed]
+      required: [future_id, generated_at, risks, coverage]
+
+    RiskType:
+      type: string
+      enum: [night_noise, crowds, walkability, weather_mismatch, construction, transfer_difficulty,
+             weak_transport, room_location_mismatch, seasonal_closure]
+
+    RiskSummary:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        risk_type: { $ref: '#/components/schemas/RiskType' }
+        severity: { type: string, enum: [low, medium, high] }
+      required: [id, risk_type, severity]
+
+    RiskItem:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        risk_type: { $ref: '#/components/schemas/RiskType' }
+        severity:
+          type: string
+          enum: [low, medium, high]
+        confidence: { $ref: '#/components/schemas/Confidence' }
+        claim_kind:
+          type: string
+          enum: [verified_fact, derived_metric, model_inference]
+          description: |
+            The four-way separation from `01_product/experience_forecast.md`, made structural.
+            (The fourth state, uncertainty, is expressed by `coverage` and by low confidence.)
+            Presenting an inference with the authority of a measurement is the fastest way to lose the user's trust.
+        affected_dimension:
+          $ref: '#/components/schemas/Dimension'
+        statement: { type: string }
+        evidence:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/Evidence' }
+          description: A risk without evidence cannot be represented. That is deliberate.
+        mitigations:
+          type: array
+          items: { $ref: '#/components/schemas/Mitigation' }
+      required: [id, risk_type, severity, confidence, claim_kind, affected_dimension, statement, evidence]
+
+    Evidence:
+      type: object
+      additionalProperties: false
+      properties:
+        source:
+          type: string
+          enum: [review, geo, weather, seasonality, provider_metadata]
+        excerpt: { type: string }
+        observed_at:
+          type: [string, 'null']
+          format: date
+          description: Recency. A 2019 noise complaint is nearly worthless and must not be presented as current.
+        count:
+          type: [integer, 'null']
+          description: e.g. how many recent reviews mention this.
+      required: [source]
+
+    Mitigation:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        description: { type: string }
+        price_change: { $ref: '#/components/schemas/Money' }
+        severity_after: { type: string, enum: [low, medium, high] }
+      required: [id, description, price_change, severity_after]
+
+    Job:
+      type: object
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        status: { type: string, enum: [queued, running, succeeded, failed] }
+        kind: { type: string, enum: [generate_futures, simulate, apply_mitigation] }
+        created_at: { type: string, format: date-time }
+        result:
+          description: Present when `succeeded`.
+          oneOf:
+            - type: 'null'
+            - type: object
+              additionalProperties: false
+              properties:
+                kind: { type: string, enum: [futures, future, no_solution] }
+                futures:
+                  type: array
+                  items: { $ref: '#/components/schemas/Future' }
+                future: { $ref: '#/components/schemas/Future' }
+                no_solution: { $ref: '#/components/schemas/NoSolution' }
+              required: [kind]
+        error:
+          oneOf:
+            - type: 'null'
+            - $ref: '#/components/schemas/Problem'
+      required: [id, status, kind, created_at]
