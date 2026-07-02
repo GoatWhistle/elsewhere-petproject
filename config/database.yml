@@ -1,0 +1,10 @@
+development:
+  adapter: postgresql
+  database: elsewhere_development
+  host: localhost
+
+test:
+  adapter: postgresql
+  database: elsewhere_test
+  host: localhost
+

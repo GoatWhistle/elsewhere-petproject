@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+require "fileutils"
+
+root = File.expand_path("..", __dir__)
+FileUtils.mkdir_p(File.join(root, "tmp"))
+FileUtils.mkdir_p(File.join(root, "log"))
+env_example = File.join(root, ".env.example")
+env_file = File.join(root, ".env")
+FileUtils.cp(env_example, env_file) unless File.exist?(env_file)
+puts "Elsewhere walking skeleton is ready. Run: bin/server"
+

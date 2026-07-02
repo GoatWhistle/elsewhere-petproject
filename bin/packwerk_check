@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+# Lightweight guard used before the packwerk gem is installed. The production
+# app can replace this with `packwerk check`; these invariants are the important
+# part of Phase 0 and fail fast in CI.
+root = File.expand_path("..", __dir__)
+violations = []
+Dir[File.join(root, "packs/planning/**/*.rb")].each do |file|
+  text = File.read(file)
+  violations << "planning references foresight: #{file}" if text.include?("packs/foresight")
+end
+Dir[File.join(root, "packs/foresight/**/*.rb")].each do |file|
+  text = File.read(file)
+  violations << "foresight writes future_versions: #{file}" if text.match?(/future_versions|Store\.futures\[/)
+end
+abort violations.join("\n") unless violations.empty?
+puts "packwerk boundaries: OK"
+

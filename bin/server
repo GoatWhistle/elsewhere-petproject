@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+$LOAD_PATH.unshift(File.expand_path("../app", __dir__))
+require "elsewhere"
+
+port = (ENV["PORT"] || 3000).to_i
+Elsewhere::Server.new(port: port).start
+
