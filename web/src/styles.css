@@ -1,0 +1,10 @@
+:root { font-family: Inter, system-ui, sans-serif; color: #182220; background: #f6f5ef; }
+body { margin: 0; } main { max-width: 1120px; margin: 0 auto; padding: 64px 24px; }
+header { max-width: 720px; } .eyebrow { letter-spacing: .2em; font-size: 12px; color: #6c766f; }
+h1 { font-size: clamp(38px, 6vw, 72px); line-height: 1.02; margin: 18px 0; } h2 { margin-top: 56px; }
+.dream { display: flex; gap: 12px; align-items: stretch; margin-top: 36px; } textarea { flex: 1; min-height: 110px; border: 1px solid #c9d0c8; border-radius: 14px; padding: 16px; font: inherit; background: white; }
+button { border: 0; border-radius: 14px; background: #173d32; color: white; padding: 16px 22px; font: inherit; cursor: pointer; } button:disabled { opacity: .5; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; } .chips span { background: #e3e9df; border-radius: 999px; padding: 8px 12px; font-size: 13px; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; } article { background: white; border-radius: 18px; padding: 22px; box-shadow: 0 8px 24px #18222012; } .score { color: #b15b38; font-size: 22px; font-weight: 700; } article strong { display: block; font-size: 24px; margin: 18px 0 4px; } small, .muted { color: #6c766f; display: block; } details { margin-top: 18px; font-size: 14px; line-height: 1.7; }
+@media (max-width: 760px) { .dream, .grid { display: block; } button { margin-top: 10px; width: 100%; } article { margin-bottom: 14px; } }
+
