@@ -1,0 +1,9 @@
+[
+  {
+    "dream": "Устали вдвоём на неделю к тёплому морю, тихо, вкусно, пешком, до 180000 ₽",
+    "origin": "MOW",
+    "must_include": ["sea_access", "quiet", "food_quality", "walkability"],
+    "must_not_include": ["LED"]
+  }
+]
+

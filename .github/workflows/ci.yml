@@ -1,0 +1,18 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+      - run: ruby -Itest test/phase0_test.rb
+      - run: bin/packwerk_check
+      - run: ruby -c app/elsewhere.rb
+      - run: ruby -c packs/planning/lib/planning.rb
+      - run: ruby -c packs/foresight/lib/foresight.rb
+      - run: ruby -c packs/supply/lib/supply.rb
+      - run: npm ci --prefix web
+      - run: npm run check --prefix web
