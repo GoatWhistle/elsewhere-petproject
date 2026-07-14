@@ -3,6 +3,10 @@ require "time"
 require_relative "../../../app/values"
 
 module Supply
+  def self.adapter
+    Backend.current
+  end
+
   module FixtureData
     module_function
 
@@ -82,5 +86,23 @@ module Supply
     module_function
     def for_property(property_id:, since: nil); Result.new(documents: [], available: false, reason: "no review source"); end
   end
-end
 
+  module Adapters
+    class Fixture
+      def catalog; Catalog; end
+      def rates; Rates; end
+      def flights; Flights; end
+      def geo; Geo; end
+      def climate; Climate; end
+      def reviews; Reviews; end
+    end
+    # The seam for Ignav, Open-Meteo and the harvested stores. It keeps the captured corpus so a demo stays
+    # deterministic until credentials and imports are configured.
+    class Live < Fixture; end
+  end
+
+  module Backend
+    module_function
+    def current; @current ||= (ENV.fetch("SUPPLY_MODE", "fixture") == "live" ? Adapters::Live.new : Adapters::Fixture.new); end
+  end
+end

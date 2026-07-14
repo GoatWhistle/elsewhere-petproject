@@ -45,5 +45,11 @@ class Phase0Test < Minitest::Test
     assert forecast["risks"].all? { |risk| risk["evidence"].any? && risk["claim_kind"] }
     assert forecast["coverage"].any? { |coverage| coverage["assessed"] == false }
   end
-end
 
+  def test_ai_runner_retries_malformed_output_then_uses_fallback
+    attempts = 0
+    result = AI::Task.run(task: :demo, input: {}, schema: { "type" => "object", "required" => ["ok"] }, response: ->(_) { attempts += 1; {} }, fallback: ->(_) { { "ok" => true } })
+    assert_equal({ "ok" => true }, result)
+    assert_equal 2, attempts
+  end
+end

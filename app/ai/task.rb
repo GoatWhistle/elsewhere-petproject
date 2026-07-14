@@ -6,16 +6,21 @@ module AI
 
     @logs = []
 
-    def run(task:, input:, schema: nil, fallback: nil)
+    def run(task:, input:, schema: nil, fallback: nil, response: nil)
       # The real adapter can be wired to any OpenAI-compatible endpoint. Phase 0
-      # deliberately uses a deterministic fallback, so the product works offline.
-      result = fallback ? fallback.call(input) : {}
-      validate!(result, schema) if schema
-      @logs << { task: task, latency_ms: 0, fallback: true }
-      result
-    rescue StandardError => error
-      @logs << { task: task, error: error.message, fallback: true }
-      fallback ? fallback.call(input) : {}
+      # uses an injected response when present, otherwise a deterministic fallback.
+      attempts = 0
+      begin
+        attempts += 1
+        result = response ? response.call(input) : (fallback ? fallback.call(input) : {})
+        validate!(result, schema) if schema
+        @logs << { task: task, attempts: attempts, latency_ms: 0, fallback: !response }
+        result
+      rescue StandardError => error
+        retry if attempts < 2
+        @logs << { task: task, attempts: attempts, error: error.message, fallback: true }
+        fallback ? fallback.call(input) : {}
+      end
     end
 
     def logs; @logs; end
