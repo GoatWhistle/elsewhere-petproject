@@ -1,8 +1,8 @@
 require "date"
 require "time"
-require_relative "../../../app/values"
-require_relative "../../../app/elsewhere/store"
-require_relative "../../../app/ai/task"
+require_relative "../../shared/lib/elsewhere/values"
+require_relative "elsewhere/store"
+require_relative "../../shared/lib/ai/task"
 require_relative "../../supply/lib/supply"
 
 module Planning
@@ -17,10 +17,9 @@ module Planning
       id = Elsewhere::Store.id
       dna = TravelDna.draft(dream_text, date_window, party)
       session = { "id" => id, "created_at" => now, "dream_text" => dream_text, "travel_dna" => dna, "clarifications" => dna["clarifications"], "_origin" => origin, "_date_window" => date_window, "_party" => party }
-      Elsewhere::Store.sessions[id] = session
-      session
+      Elsewhere::Store.save_session(session)
     end
-    def find(id:); Elsewhere::Store.sessions[id]; end
+    def find(id:); Elsewhere::Store.find_session(id); end
     def public(session); session.select { |key, _| %w[id created_at dream_text travel_dna clarifications].include?(key) }; end
   end
 
@@ -49,12 +48,15 @@ module Planning
     end
     def update(session_id:, elements:)
       dna = { "elements" => elements.map { |e| e.merge("provenance" => e["provenance"] || "confirmed", "confidence" => 1.0) }, "unmatched_intent" => [], "clarifications" => [] }
-      Sessions.find(id: session_id)["travel_dna"] = dna
+      session = Sessions.find(id: session_id)
+      session["travel_dna"] = dna
+      Elsewhere::Store.save_session(session)
       dna
     end
     def answer_clarifications(session_id:, answers:)
       session = Sessions.find(id: session_id)
       session["travel_dna"]["clarifications"] = []
+      Elsewhere::Store.save_session(session)
       session["travel_dna"]
     end
   end
@@ -66,11 +68,11 @@ module Planning
       session = Sessions.find(id: session_id)
       choices = [["AER", "prop-sochi-sea", "Море и еда", 9200000], ["AER", "prop-sochi-quiet", "Тишина и прогулки", 7900000], ["MRV", "prop-mrv-mountain", "Горы и спокойствие", 7200000]]
       futures = choices.map.with_index { |choice, index| build(session, choice, index) }
-      futures.each { |future| Elsewhere::Store.futures[future["id"]] = future }
-      Elsewhere::Store.job("generate_futures", { "kind" => "futures", "futures" => futures })
+      futures.each { |future| Elsewhere::Store.save_future(future) }
+      { "kind" => "futures", "futures" => futures }
     end
-    def list(session_id:); Elsewhere::Store.futures.values.select { |f| f["session_id"] == session_id }; end
-    def find(future_id:); Elsewhere::Store.futures[future_id]; end
+    def list(session_id:); Elsewhere::Store.futures_for_session(session_id); end
+    def find(future_id:); Elsewhere::Store.find_future(future_id); end
 
     def build(session, choice, index, parent: nil, version: 1)
       city, property_id, why, flight_amount = choice
@@ -106,8 +108,8 @@ module Planning
       changed["price"]["total"]["amount_minor"] -= 830_000
       changed["match"]["score"] = (changed["match"]["score"] - 0.02).round(2)
       changed["delta"] = { "from_future_id" => original["id"], "price_before" => original["price"]["total"], "price_after" => changed["price"]["total"], "price_change" => { "amount_minor" => -830000, "currency" => "RUB" }, "items" => [{ "description" => "Отель дальше от моря → экономия на локации", "amount" => { "amount_minor" => -830000, "currency" => "RUB" }, "relaxed_dimension" => "sea_access" }], "match_before" => original["match"]["score"], "match_after" => changed["match"]["score"], "dimension_changes" => [{ "dimension" => "sea_access", "change" => "worsened" }], "new_risks" => [], "resolved_risks" => [], "explanation" => "Снижена цена за счёт наименее важного компромисса." }
-      Elsewhere::Store.futures[changed["id"]] = changed
-      Elsewhere::Store.job("simulate", { "kind" => "future", "future" => changed })
+      Elsewhere::Store.save_future(changed)
+      { "kind" => "future", "future" => changed }
     end
   end
 end

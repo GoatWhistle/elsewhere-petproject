@@ -1,0 +1,35 @@
+services:
+  postgres:
+    image: postgis/postgis:15-3.5
+    platform: linux/amd64
+    environment:
+      POSTGRES_USER: elsewhere
+      POSTGRES_PASSWORD: elsewhere
+      POSTGRES_DB: elsewhere_development
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U elsewhere"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+    ports: ["5432:5432"]
+  redis:
+    image: redis:7.4-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+    ports: ["6379:6379"]
+  app:
+    image: elsewhere-phase0
+    build: .
+    environment:
+      RAILS_ENV: development
+      DATABASE_URL: postgres://elsewhere:elsewhere@postgres/elsewhere_development
+      REDIS_URL: redis://redis:6379/0
+      SUPPLY_MODE: fixture
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports: ["3000:3000"]
+    volumes: [".:/app"]

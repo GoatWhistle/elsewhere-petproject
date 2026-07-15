@@ -1,4 +1,2 @@
-task :test do
-  ruby "-Itest", "test/phase0_test.rb"
-end
-
+require_relative "config/application"
+Rails.application.load_tasks

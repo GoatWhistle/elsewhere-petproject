@@ -1,10 +1,14 @@
 development:
   adapter: postgresql
-  database: elsewhere_development
-  host: localhost
+  url: <%= ENV.fetch("DATABASE_URL", "postgres://localhost/elsewhere_development") %>
+  schema_search_path: public
 
 test:
   adapter: postgresql
-  database: elsewhere_test
-  host: localhost
+  url: <%= ENV.fetch("TEST_DATABASE_URL", "postgres://localhost/elsewhere_test") %>
+  schema_search_path: public
 
+production:
+  adapter: postgresql
+  url: <%= ENV.fetch("DATABASE_URL", "postgres://localhost/elsewhere_production") %>
+  schema_search_path: public

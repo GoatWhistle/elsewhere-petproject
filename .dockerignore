@@ -1,0 +1,9 @@
+.git
+.env
+.bundle
+log
+tmp
+coverage
+web/node_modules
+web/dist
+web/*.tsbuildinfo

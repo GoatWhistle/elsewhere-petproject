@@ -1,11 +1,20 @@
-# frozen_string_literal: true
+require_relative "boot"
+require "rails"
+require "active_model/railtie"
+require "active_job/railtie"
+require "active_record/railtie"
+require "action_controller/railtie"
 
-# This file is intentionally Rails-shaped. In environments where Rails is
-# installed, `config/environment.rb` boots the same contexts; the Phase 0
-# executable remains usable with the standard-library adapter.
+Bundler.require(*Rails.groups)
+
 module Elsewhere
-  class Application
-    def self.config; @config ||= {}; end
+  class Application < Rails::Application
+    config.load_defaults 8.1
+    config.api_only = true
+    config.active_job.queue_adapter = :sidekiq
+    config.active_record.schema_format = :sql
+    config.active_record.dump_schemas = :all
+    config.autoload_paths += Dir[root.join("packs/*/lib")]
+    config.eager_load_paths += Dir[root.join("packs/*/lib")]
   end
 end
-

@@ -1,3 +1,2 @@
 require_relative "application"
-require_relative "../app/elsewhere"
-
+Rails.application.initialize!

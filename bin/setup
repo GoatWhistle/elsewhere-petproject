@@ -1,11 +1,17 @@
-#!/usr/bin/env ruby
-require "fileutils"
+#!/bin/sh
+set -e
+cd "$(dirname "$0")/.."
+mkdir -p tmp log
+test -f .env || cp .env.example .env
 
-root = File.expand_path("..", __dir__)
-FileUtils.mkdir_p(File.join(root, "tmp"))
-FileUtils.mkdir_p(File.join(root, "log"))
-env_example = File.join(root, ".env.example")
-env_file = File.join(root, ".env")
-FileUtils.cp(env_example, env_file) unless File.exist?(env_file)
-puts "Elsewhere walking skeleton is ready. Run: bin/server"
-
+if ruby -e 'require "rubygems"; exit(Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.3") ? 0 : 1)' 2>/dev/null && command -v bundle >/dev/null; then
+  bundle check || bundle install
+  bin/rails db:prepare
+  echo "Elsewhere is ready. Run: bin/rails server"
+else
+  if docker compose version >/dev/null 2>&1; then compose="docker compose"; else compose="docker-compose"; fi
+  $compose build app
+  $compose up -d postgres redis
+  $compose run --rm app bin/rails db:prepare
+  echo "Elsewhere is ready. Run: $compose up app"
+fi

@@ -1,5 +1,3 @@
-# Rails route reference. The executable walking skeleton uses the same routes in
-# `app/elsewhere/http_app.rb` so it can run without installed gems.
 Rails.application.routes.draw do
   post "/planning-sessions", to: "planning_sessions#create"
   get "/planning-sessions/:id", to: "planning_sessions#show"
@@ -13,4 +11,3 @@ Rails.application.routes.draw do
   post "/futures/:future_id/risks/:risk_id/mitigations/:mitigation_id", to: "mitigations#create"
   get "/jobs/:id", to: "jobs#show"
 end
-

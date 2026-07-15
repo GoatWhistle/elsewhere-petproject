@@ -1,5 +1,4 @@
-require_relative "../../../app/values"
-require_relative "../../../app/elsewhere/store"
+require_relative "../../shared/lib/elsewhere/values"
 require_relative "../../supply/lib/supply"
 require_relative "../../planning/lib/planning"
 
