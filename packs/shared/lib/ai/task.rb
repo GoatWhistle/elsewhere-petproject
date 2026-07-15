@@ -7,33 +7,47 @@ module AI
     module_function
 
     @logs = []
+    @circuit_mutex = Mutex.new
+    @circuit_open_until = nil
 
     def run(task:, input:, schema: nil, fallback: nil, response: nil)
       attempts = 0
       started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      unless response || model_configured?
+        return recover(task, input, schema, fallback, attempts, started)
+      end
+      if !response && circuit_open?
+        return recover(task, input, schema, fallback, attempts, started, StandardError.new("LLM circuit open"))
+      end
+
       begin
         attempts += 1
-        raw = if response
-                response.call(input)
-              elsif ENV["LLM_BASE_URL"] && ENV["LLM_MODEL"]
-                Client.new.call(task: task, input: input, schema: schema)
-              else
-                fallback ? fallback.call(input) : {}
-              end
-        result, usage = raw.is_a?(Array) ? raw : [raw, {}]
+        outcome = if response
+                    raw = response.call(input)
+                    raw.is_a?(Client::Result) ? raw : Client::Result.new(value: raw, usage: {})
+                  else
+                    Client.new.call(task: task, input: input, schema: schema)
+                  end
+        result = outcome.value
         validate!(result, schema) if schema
-        @logs << log_entry(task, input, result, attempts, started, usage, fallback: !response && !ENV["LLM_BASE_URL"])
+        reset_circuit! unless response
+        @logs << log_entry(task, input, result, attempts, started, outcome.usage, fallback: false)
         result
+      rescue Client::TransportError => error
+        trip_circuit! unless response
+        recover(task, input, schema, fallback, attempts, started, error)
       rescue StandardError => error
         retry if attempts < 2
-        result = fallback ? fallback.call(input) : {}
-        validate!(result, schema) if schema
-        @logs << log_entry(task, input, result, attempts, started, {}, fallback: true).merge(error: error.message)
-        result
+        recover(task, input, schema, fallback, attempts, started, error)
       end
     end
 
     def logs; @logs; end
+
+    def reset!
+      @logs = []
+      reset_circuit!
+    end
 
     def validate!(value, schema)
       return value unless schema
@@ -59,7 +73,9 @@ module AI
               when "array" then value.is_a?(Array)
               when "string" then value.is_a?(String)
               when "number" then value.is_a?(Numeric)
+              when "integer" then value.is_a?(Integer)
               when "boolean" then value == true || value == false
+              when "null" then value.nil?
               else true
               end
       raise "AI output has invalid type" unless valid
@@ -67,13 +83,76 @@ module AI
     end
 
     def log_entry(task, input, result, attempts, started, usage, fallback:)
-      { task: task, input: input, output: result, attempts: attempts, latency_ms: ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started) * 1000).round(3), prompt_tokens: usage["prompt_tokens"], completion_tokens: usage["completion_tokens"], cost_usd_micros: cost_usd_micros(usage), fallback: fallback }
+      { task: task, input: input, output: result, attempts: attempts, latency_ms: ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started) * 1000).round(3), prompt_tokens: usage_value(usage, "prompt_tokens"), completion_tokens: usage_value(usage, "completion_tokens"), cost_usd_micros: cost_usd_micros(usage), fallback: fallback }
     end
 
     def cost_usd_micros(usage)
       input = BigDecimal(ENV.fetch("LLM_INPUT_USD_PER_MILLION_TOKENS", "0"))
       output = BigDecimal(ENV.fetch("LLM_OUTPUT_USD_PER_MILLION_TOKENS", "0"))
-      (usage.fetch("prompt_tokens", 0).to_i * input + usage.fetch("completion_tokens", 0).to_i * output).round.to_i
+      (usage_value(usage, "prompt_tokens").to_i * input + usage_value(usage, "completion_tokens").to_i * output).round.to_i
+    end
+
+    def recover(task, input, schema, fallback, attempts, started, error = nil)
+      fallback_error = nil
+      begin
+        result = fallback ? fallback.call(input) : neutral_value(schema)
+        validate!(result, schema) if schema
+      rescue StandardError => caught
+        fallback_error = caught
+        result = neutral_value(schema)
+      end
+      entry = log_entry(task, input, result, attempts, started, {}, fallback: true)
+      entry[:error] = error.message if error
+      entry[:fallback_error] = fallback_error.message if fallback_error
+      @logs << entry
+      result
+    end
+
+    # Schema-derived neutrals keep a broken fallback from turning model unavailability into an error.
+    def neutral_value(schema)
+      return {} unless schema
+      return schema["enum"].first if schema["enum"]&.any?
+
+      case schema["type"]
+      when "object"
+        properties = schema.fetch("properties", {})
+        Array(schema["required"]).to_h { |key| [key, neutral_value(properties[key])] }
+      when "array" then []
+      when "string" then ""
+      when "number" then 0.0
+      when "integer" then 0
+      when "boolean" then false
+      when "null" then nil
+      else nil
+      end
+    end
+
+    def model_configured?
+      [ENV["LLM_BASE_URL"], ENV["LLM_MODEL"]].all? { |value| value && !value.empty? }
+    end
+
+    def circuit_open?
+      @circuit_mutex.synchronize do
+        @circuit_open_until = nil if @circuit_open_until && monotonic_now >= @circuit_open_until
+        !@circuit_open_until.nil?
+      end
+    end
+
+    def trip_circuit!
+      duration = ENV.fetch("LLM_CIRCUIT_BREAKER_SECONDS", "30").to_f
+      @circuit_mutex.synchronize { @circuit_open_until = monotonic_now + duration }
+    end
+
+    def reset_circuit!
+      @circuit_mutex.synchronize { @circuit_open_until = nil }
+    end
+
+    def monotonic_now
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+
+    def usage_value(usage, key)
+      usage[key] || usage[key.to_sym]
     end
   end
 end

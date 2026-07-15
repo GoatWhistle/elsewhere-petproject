@@ -48,8 +48,14 @@ AI::Task.run(
 Rules the runner enforces:
 
 - output is validated against a JSON Schema; a malformed response is retried once, then falls back;
+- `AI::Client` returns `AI::Client::Result(value:, usage:)`; an array is always a domain value and is never
+  overloaded as a transport tuple;
 - outputs are constrained to closed vocabularies where one exists (dimensions, directions, risk types) —
   the model may not invent a dimension;
+- a transport failure opens a short circuit immediately, without spending a second timeout; calls use the
+  deterministic fallback until the circuit closes;
+- a broken fallback cannot turn model unavailability into a 500: the runner logs `fallback_error` and returns a
+  neutral value derived from the declared schema;
 - every call is logged with prompt, response, latency, and cost, because evaluating quality later requires it;
 - no tool has a side effect. The model never books, never cancels, never writes a Future.
 
