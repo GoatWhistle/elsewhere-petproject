@@ -14,7 +14,7 @@ export type Future = {
 export class ElsewhereClient {
   constructor(private readonly baseUrl = "http://localhost:3000") {}
   async createPlanningSession(dream_text: string) {
-    return this.request<{ id: string; travel_dna: { elements: Array<{ dimension: string; provenance: string }> } }>("/planning-sessions", { method: "POST", body: JSON.stringify({ dream_text, origin: "MOW", date_window: { from: "2026-07-08", to: "2026-07-15" }, party: { adults: 2, children: 0 } }) });
+    return this.request<{ id: string; travel_dna: { elements: Array<{ dimension: string; provenance: string }> } }>("/planning-sessions", { method: "POST", body: JSON.stringify({ dream_text, origin: "MOW", date_window: { earliest: "2026-07-01", latest: "2026-07-31", nights_min: 6, nights_max: 7 }, party: { adults: 2 } }) });
   }
   async generateFutures(sessionId: string) {
     await this.request(`/planning-sessions/${sessionId}/futures`, { method: "POST", body: "{}" });
@@ -27,4 +27,3 @@ export class ElsewhereClient {
     return payload as T;
   }
 }
-

@@ -33,10 +33,10 @@ module Elsewhere
     def route(method, path, body)
       case
       when method == "POST" && path == "/planning-sessions"
-        session = Planning::Sessions.create(dream_text: body["dream_text"].to_s, origin: body["origin"] || "MOW", date_window: body["date_window"] || { "from" => "2026-07-08", "to" => "2026-07-15" }, party: body["party"] || { "adults" => 2, "children" => 0 })
-        [session, 201]
+        session = Planning::Sessions.create(dream_text: body["dream_text"].to_s, origin: body["origin"] || "MOW", date_window: body["date_window"] || { "earliest" => "2026-07-01", "latest" => "2026-07-31", "nights_min" => 6, "nights_max" => 7 }, party: body["party"] || { "adults" => 2 })
+        [Planning::Sessions.public(session), 201]
       when method == "GET" && path =~ %r{\A/planning-sessions/([^/]+)\z}
-        session = Planning::Sessions.find(Regexp.last_match(1)); session ? [session, 200] : problem(404, "Session not found")
+        session = Planning::Sessions.find(Regexp.last_match(1)); session ? [Planning::Sessions.public(session), 200] : problem(404, "Session not found")
       when method == "PATCH" && path =~ %r{\A/planning-sessions/([^/]+)/travel-dna\z}
         [Planning::TravelDna.update(session_id: Regexp.last_match(1), elements: body["elements"] || []), 200]
       when method == "POST" && path =~ %r{\A/planning-sessions/([^/]+)/clarifications\z}

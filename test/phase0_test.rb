@@ -17,7 +17,7 @@ class Phase0Test < Minitest::Test
 
   def test_full_phase_zero_journey_through_http_layer
     Elsewhere::Store.reset!
-    status, session = request("POST", "/planning-sessions", "dream_text" => "Тёплое море, тихо, до 180000 ₽", "origin" => "MOW", "date_window" => { "from" => "2026-07-08", "to" => "2026-07-15" }, "party" => { "adults" => 2, "children" => 0 })
+    status, session = request("POST", "/planning-sessions", "dream_text" => "Тёплое море, тихо, до 180000 ₽", "origin" => "MOW", "date_window" => { "earliest" => "2026-07-01", "latest" => "2026-07-31", "nights_min" => 6, "nights_max" => 7 }, "party" => { "adults" => 2 })
     assert_equal 201, status
     assert session["travel_dna"]["elements"].any? { |e| e["dimension"] == "sea_access" }
 
