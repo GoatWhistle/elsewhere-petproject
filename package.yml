@@ -3,3 +3,5 @@ enforce_privacy: true
 dependencies:
   - packs/shared
   - packs/supply
+  - packs/planning
+  - packs/foresight

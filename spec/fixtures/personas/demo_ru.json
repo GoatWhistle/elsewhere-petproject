@@ -1,9 +1,12 @@
 [
-  {
-    "dream": "Устали вдвоём на неделю к тёплому морю, тихо, вкусно, пешком, до 180000 ₽",
-    "origin": "MOW",
-    "must_include": ["sea_access", "quiet", "food_quality", "walkability"],
-    "must_not_include": ["LED"]
-  }
+  { "id": "sea_quiet", "dream": "Вдвоём на неделю к тёплому морю, тихо, до 180000 ₽", "origin": "MOW", "must_include": ["sea_access", "quiet", "total_budget"] },
+  { "id": "walkable_food", "dream": "Хотим вкусно есть и всё обходить пешком, без машины", "origin": "MOW", "must_include": ["food_quality", "walkability", "car_free"] },
+  { "id": "nature", "dream": "Нужны горы, природа и минимум людей", "origin": "MOW", "must_include": ["nature_vs_city", "crowds"] },
+  { "id": "city", "dream": "Живой город, рестораны и вечерняя жизнь", "origin": "MOW", "must_include": ["nature_vs_city", "nightlife", "food_quality"] },
+  { "id": "strict_budget", "dream": "Не дороже 90000 ₽, остальное вторично", "origin": "MOW", "must_include": ["total_budget"] },
+  { "id": "comfort", "dream": "Комфорт важнее цены, хочется хороший отель", "origin": "MOW", "must_include": ["comfort"] },
+  { "id": "warmth", "dream": "Главное — гарантированно тепло в июле", "origin": "MOW", "must_include": ["climate_warm", "dates"] },
+  { "id": "no_crowds", "dream": "Терпеть не можем толпы и туристические места", "origin": "MOW", "must_include": ["crowds"] },
+  { "id": "easy_transfer", "dream": "После перелёта нужен самый простой трансфер", "origin": "MOW", "must_include": ["transfer_simplicity"] },
+  { "id": "balanced", "dream": "Море, немного города, прогулки и умеренный бюджет", "origin": "MOW", "must_include": ["sea_access", "nature_vs_city", "walkability", "total_budget"] }
 ]
-

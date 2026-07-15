@@ -1,6 +1,6 @@
 enforce_dependencies: true
 enforce_privacy: true
 dependencies:
-  - supply
-  - planning
-
+  - packs/shared
+  - packs/supply
+  - packs/planning
