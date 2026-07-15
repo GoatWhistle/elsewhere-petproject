@@ -14,6 +14,8 @@ module Elsewhere
       result, status = route(method, path, body)
       @response.status = status
       @response["Content-Type"] = "application/json"
+      @response["Access-Control-Allow-Origin"] = "*"
+      @response["Access-Control-Allow-Headers"] = "Content-Type"
       @response.body = JSON.generate(result)
     rescue JSON::ParserError
       render_problem(422, "Invalid JSON request")
