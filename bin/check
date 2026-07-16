@@ -1,0 +1,21 @@
+#!/bin/sh
+# Everything that used to run in CI, in one command. Run before you push.
+set -e
+cd "$(dirname "$0")/.."
+
+echo "→ packwerk boundaries"
+bin/packwerk_check
+
+echo "→ rspec"
+if command -v bundle >/dev/null 2>&1 && bundle check >/dev/null 2>&1; then
+  RAILS_ENV=test bundle exec rspec
+else
+  if docker compose version >/dev/null 2>&1; then compose="docker compose"; else compose="docker-compose"; fi
+  $compose run --rm -e RAILS_ENV=test app bundle exec rspec
+fi
+
+echo "→ frontend"
+npm run check --prefix web
+npm run lint --prefix web
+
+echo "all checks passed"
