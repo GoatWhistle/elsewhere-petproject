@@ -29,7 +29,7 @@
 5. **Сравнимость между Futures** — 94% и 87% обязаны осмысленно сравниваться внутри одной сессии. Сравнимость
    между сессиями и пользователями явно *не* требуется, и утверждать её было бы нечестно.
 
-## Conceptual shape (candidate, not yet decided)
+## Форма
 
 ```
 1. Жёсткие ограничения  → прошёл или нет. Нарушение дисквалифицирует, а не даёт низкий балл.
@@ -74,11 +74,23 @@
 
 Но не порождать число.
 
-## Open
+## Решено
 
-- Normalization: is the score a percentage of achievable-given-constraints, or of a theoretical ideal?
-  This determines whether 94% is impressive or meaningless. Needs a decision before any UI shows a number.
+**Нормировка на фиксированный идеал** ([DEC-020](../00_project/decision_log.md)):
+`score = Σ(wᵢ × sᵢ) / Σ(wᵢ)` по оценённым измерениям, минус штрафы за неприязни. Не на то, чего может достичь
+текущий набор кандидатов: такой знаменатель едет, когда Симулятор меняет ограничения, и дельта начинает двигаться
+сама по себе.
+
+**Недостающие данные перенормируют, покрытие ограничивает уверенность** ([DEC-021](../00_project/decision_log.md)):
+`coverage = Σ(веса оценённых) / Σ(все веса)`, `confidence = coverage × взвешенное среднее уверенности`.
+Почти равные оценки разрешаются по покрытию, так что знать меньше перестаёт быть преимуществом.
+
+Ожидаемая полоса оценок — 0,6–0,9. Ничто не достигает 98%, и для показа ничего не перемасштабируется.
+
+## Open
 - Should the score be shown at all, or shown as a band (Excellent / Strong / Good)? A precise-looking number
   implies precision we may not have. **Recommendation: show the number *with* its decomposition, never alone.**
-- How do we evaluate that the score is any good? There is no ground truth. Candidate: a small hand-built set of
-  personas + expected orderings, checked as a regression test. Cheap and surprisingly effective.
+- How do we evaluate that the score is any good? There is no ground truth. The persona suite with expected
+  orderings is the substitute — cheap and surprisingly effective.
+- **The satisfaction curve per dimension is still unwritten.** What is 140 m from the sea worth, 0.9 or 1.0?
+  These curves *are* the model; write them down before the code (task B-4).

@@ -421,7 +421,12 @@ components:
       description: |
         The structured model of what matters to this user for this trip.
         Not filters — see `01_product/travel_dna.md` for the distinction and the degeneration test.
+
+        Versioned (DEC-023). Editing preferences creates a new version rather than mutating this one, so a score
+        the user has already seen never changes retroactively, and a delta is always computed against one DNA.
       properties:
+        id: { type: string, format: uuid }
+        version: { type: integer, minimum: 1 }
         elements:
           type: array
           items: { $ref: '#/components/schemas/TravelDnaElement' }
@@ -431,7 +436,7 @@ components:
           description: |
             Things the user said that the taxonomy could not represent. Surfaced to the user rather than
             silently dropped — silently dropping intent is how this degenerates into filters.
-      required: [elements, unmatched_intent]
+      required: [id, version, elements, unmatched_intent]
 
     TravelDnaElement:
       type: object
@@ -526,6 +531,12 @@ components:
           type: string
           format: uuid
           description: Stable across versions of the same Future, so the client can group and diff them.
+        travel_dna_version_id:
+          type: string
+          format: uuid
+          description: |
+            Which Travel DNA version produced this Future's score (DEC-023). Determinism is only checkable
+            against a pinned DNA — the parse itself comes from a model and drifts.
         version: { type: integer, minimum: 1 }
         parent_id:
           type: [string, 'null']
@@ -562,8 +573,8 @@ components:
           type: array
           items: { $ref: '#/components/schemas/RiskSummary' }
       required:
-        [id, lineage_id, version, created_at, expires_at, destination, check_in, check_out,
-         accommodation, logistics, price, match, why_this_exists, benefits, compromises]
+        [id, lineage_id, version, travel_dna_version_id, created_at, expires_at, destination, check_in,
+         check_out, accommodation, logistics, price, match, why_this_exists, benefits, compromises]
 
     Logistics:
       type: object
@@ -705,12 +716,27 @@ components:
       description: |
         Deterministic and decomposable. A bare number is not representable here — the simulator's whole value is
         "92% → 90%, and here is which dimension moved", which an opaque score cannot support.
+
+        `score = Σ(wᵢ × sᵢ) / Σ(wᵢ)` over scored dimensions, minus aversion penalties, normalized against a fixed
+        ideal (DEC-020) so the denominator never moves when constraints change. Expect roughly 0.6–0.9; nothing
+        scores 98%, and display is never rescaled to look better.
       properties:
         score:
           type: number
           minimum: 0
           maximum: 1
-        confidence: { $ref: '#/components/schemas/Confidence' }
+        coverage:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: |
+            Share of total weight that could actually be scored (DEC-021). Renormalizing alone would reward
+            Futures we know less about, so coverage caps confidence and breaks ties: on near-equal scores the
+            better-covered Future ranks higher. Below 0.6 the client must show the gap on the card itself.
+        confidence:
+          allOf:
+            - $ref: '#/components/schemas/Confidence'
+          description: '`coverage` × the weighted mean of per-dimension confidence.'
         contributions:
           type: array
           minItems: 1
@@ -724,7 +750,7 @@ components:
               dimension: { $ref: '#/components/schemas/Dimension' }
               reason: { type: string, description: Why no data — never silently scored as neutral. }
             required: [dimension, reason]
-      required: [score, confidence, contributions, unscored_dimensions]
+      required: [score, coverage, confidence, contributions, unscored_dimensions]
 
     MatchContribution:
       type: object

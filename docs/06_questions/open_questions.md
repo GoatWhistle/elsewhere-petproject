@@ -34,17 +34,6 @@
 
 ---
 
-## OQ-C — Match normalization
-
-**Level:** contract-level, decide before UI shows a number
-**Owner:** Planning, with the lead
-
-Is the score a percentage of what is *achievable under the constraints*, or of a theoretical ideal? This decides
-whether "94%" means anything. It is visible in the UI and asserted in tests, so it is a contract question, not an
-internal one.
-
----
-
 ## OQ-D — Какие типы риска попадают в поставку и с какими порогами?
 
 **Уровень:** внутренний вопрос Foresight
@@ -76,7 +65,9 @@ internal one.
 
 ## OQ-G — Обновляют ли действия симулятора Travel DNA?
 
-**Уровень:** можно отложить — represented explicitly as `persist_to_travel_dna` in the contract
+**Уровень:** можно отложить — теперь чисто реализуемо в обе стороны, поскольку DNA версионируется
+([DEC-023](../00_project/decision_log.md)): `persist_to_dna` порождает DNA v2, новые Futures ссылаются на неё,
+существующие сохраняют свою.
 
 Временное переопределение на одной Future или свидетельство, обновляющее модель пользователя? Решает, учится ли
 продукт внутри сессии.
@@ -85,7 +76,7 @@ internal one.
 
 ## OQ-H — Есть ли аккаунт пользователя?
 
-**Level:** can defer
+**Уровень:** можно отложить
 
 Для MVP скорее нет: без заказа и без денег достаточно сессии. Единственная причина хотеть идентификацию —
 возможность вернуться к сохранённому плану позже.
