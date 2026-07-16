@@ -8,15 +8,15 @@
 
 | Потребность | Источник | Шлюз | Стоимость | Настоящее? |
 |---|---|---|---|---|
-| Property catalogue — names, coordinates, addresses, photos, ratings, indicative price level | one-time harvest of public listing pages | none | free | real |
-| POI/restaurant density, street network, road proximity | OSM regional extract → PostGIS | none | free | real |
-| Coastline distance | **ohsome API** (`api.ohsome.org`) | **no key** | free | real |
-| Walkability isochrones, airport transfer duration | **OpenRouteService** (`ORS_API_KEY`) | free account | free tier | real |
-| Climate normals, forecast | Open-Meteo | none (no key) | free, **non-commercial tier** | real |
-| Flight fares + booking links | Ignav | free account, 1000 free requests, no card | free tier | real, live — **coverage unverified, see A-0** |
-| Origin city prefill | derived from the user's input; IP lookup optional | — | — | — |
-| **Room price for given dates** | **modeled** — calibrated on harvested "from" levels + seasonality | none | free | **synthetic** |
-| Hotel reviews | none | — | — | **absent** |
+| Каталог объектов — названия, координаты, адреса, фотографии, рейтинги, индикативный ценовой уровень | разовый сбор публичных страниц каталога | нет | бесплатно | да |
+| Плотность POI и ресторанов, уличная сеть, близость дорог | региональная выгрузка OSM → PostGIS | нет | бесплатно | да |
+| Расстояние до береговой линии | **ohsome API** (`api.ohsome.org`) | **без ключа** | бесплатно | да |
+| Изохроны пешей доступности, длительность трансфера из аэропорта | **OpenRouteService** (`ORS_API_KEY`) | бесплатный аккаунт | бесплатный тариф | да |
+| Климатические нормы, прогноз | Open-Meteo | нет (без ключа) | бесплатно, **некоммерческий тариф** | да |
+| Авиатарифы и ссылки на бронирование | Ignav | бесплатный аккаунт, 1000 бесплатных запросов, без карты | бесплатный тариф | да, живые — **покрытие не проверено** |
+| Предзаполнение города вылета | выводится из ввода пользователя; определение по IP опционально | — | — | — |
+| **Цена номера на заданные даты** | **модель** — наблюдаемый базовый уровень × модельный сезонный коэффициент ([DEC-029](../00_project/decision_log.md)) | нет | бесплатно | **синтетика** |
+| Отзывы об отелях | нет | — | — | **отсутствуют** |
 
 ## Единственная синтетическая величина
 
@@ -29,10 +29,11 @@
 
 Правила, которые держат её честной:
 
-- The modeled price is labeled `modeled` in `PriceComponent.fulfilment` and shown as such in the UI.
-- It is calibrated on real observed price levels for the actual property, not invented per request.
-- It is deterministic for a given property and date range, or the Simulator's deltas would be noise.
-- We say it out loud in the demo.
+- Модельная цена помечена `modeled` в `PriceComponent.fulfilment` и так же показывается в интерфейсе.
+- Её **база** — реальный наблюдаемый ценовой уровень этого объекта. Её **сезонность смоделирована** из климата и
+  популярности: это гипотеза, а не измерение, и описывается именно так.
+- Она детерминирована для данного объекта и диапазона дат, иначе дельты Симулятора были бы шумом.
+- Мы говорим об этом вслух на демонстрации.
 
 ## Чего стоит отсутствие отзывов
 

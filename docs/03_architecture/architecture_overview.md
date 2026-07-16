@@ -47,16 +47,17 @@ POST /planning-sessions
   → Planning: модель извлекает кандидатов в элементы Travel DNA (структурированный вывод, проверенный схемой)
   → Planning: сильно влияющие неоднозначности становятся Clarifications, а не допущениями
 POST /planning-sessions/{id}/futures            → Job
-  → Planning: candidate destinations       ← Supply::Catalog + Supply::Flights.directions_from
-  → Planning: hard-constraint filter        (deterministic; a violation disqualifies, it does not score low)
-  → Planning: room rates per candidate      ← Supply::Rates.for  (modeled)
-  → Planning: features per candidate        ← Supply::Geo, Supply::Climate
-  → Planning: Experience Match              (deterministic, weighted, decomposed)
-  → Planning: diversity selection           (explicit objective, not a side effect of ranking)
-  → Planning: trip assembly                 (travel legs + stay + transfer + mobility)
-  → Planning: cost assembly                 (observed fares + modeled rate/transfer/mobility)
-  → Planning: LLM writes explanations       (over numbers already computed — it never produces the numbers)
-  → persist immutable Future versions
+  → Planning: этап 1 — фильтр жёстких ограничений по направлениям        (локально, бесплатно)
+  → Planning: этап 2 — предварительная оценка направлений, топ-8 и квота по географии  ← Supply::Climate, Supply::Catalog
+  → Planning: этап 3 — топ-3 объекта в каждом направлении                ← Supply::Geo
+  → Supply:   этап 4 — даты и тарифы                                     ← Supply::Flights  (~24 запроса, единственный платный этап)
+  → Planning: цены номеров для всех кандидатов                           ← Supply::Rates    (модельные, локально)
+  → Planning: Совпадение                    (детерминированно, взвешенно, с разложением)
+  → Planning: этап 5 — архетипы A/B/C с порогами (DEC-022, DEC-028)
+  → Planning: сборка поездки                (плечи перелёта, проживание, трансфер, мобильность)
+  → Planning: сборка стоимости              (наблюдаемые тарифы, модельные цена номера, трансфер, мобильность)
+  → Planning: модель пишет объяснения       (поверх уже посчитанных чисел — сами числа она не порождает)
+  → сохранение неизменяемых версий Future
 ```
 
 ## Поток данных: симуляция
