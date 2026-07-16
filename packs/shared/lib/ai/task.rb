@@ -1,6 +1,7 @@
 require "json"
 require "bigdecimal"
 require_relative "client"
+require_relative "../elsewhere/schema"
 
 module AI
   module Task
@@ -55,37 +56,15 @@ module AI
       reset_circuit!
     end
 
+    # Delegated to Elsewhere::Schema: two validators for the same job would drift apart.
     def validate!(value, schema)
       return value unless schema
-      validate_type(value, schema)
-      if value.is_a?(Hash)
-        Array(schema["required"]).each { |key| raise "AI output missing #{key}" unless value.key?(key) }
-        if schema["additionalProperties"] == false
-          unknown = value.keys - schema.fetch("properties", {}).keys
-          raise "AI output has unknown keys: #{unknown.join(", ")}" if unknown.any?
-        end
-        schema.fetch("properties", {}).each { |key, child| validate!(value[key], child) if value.key?(key) }
-      elsif value.is_a?(Array) && schema["items"]
-        value.each { |item| validate!(item, schema["items"]) }
-      end
-      raise "AI output outside closed vocabulary" if schema["enum"] && !schema["enum"].include?(value)
-      value
-    end
 
-    def validate_type(value, schema)
-      type = schema["type"]
-      valid = case type
-              when "object" then value.is_a?(Hash)
-              when "array" then value.is_a?(Array)
-              when "string" then value.is_a?(String)
-              when "number" then value.is_a?(Numeric)
-              when "integer" then value.is_a?(Integer)
-              when "boolean" then value == true || value == false
-              when "null" then value.nil?
-              else true
-              end
-      raise "AI output has invalid type" unless valid
-      value
+      begin
+        Elsewhere::Schema.validate!(value, schema)
+      rescue Elsewhere::Schema::Invalid => error
+        raise error.message
+      end
     end
 
     def log_entry(task, input, result, attempts, started, usage, fallback:)

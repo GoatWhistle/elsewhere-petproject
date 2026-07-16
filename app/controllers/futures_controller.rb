@@ -6,12 +6,12 @@ class FuturesController < ApplicationController
   end
 
   def index
-    render json: { futures: Planning::Futures.list(session_id: params[:id]), diversity_note: nil }
+    render json: { futures: Planning::Futures.list(session_id: params[:id]).map { |future| Planning::Futures.public(future) }, diversity_note: nil }
   end
 
   def show
     future = Planning::Futures.find(future_id: params[:id])
     raise ActiveRecord::RecordNotFound, "Future not found" unless future
-    render json: future
+    render json: Planning::Futures.public(future)
   end
 end

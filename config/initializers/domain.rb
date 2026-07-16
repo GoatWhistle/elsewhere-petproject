@@ -1,4 +1,5 @@
 require Rails.root.join("packs/shared/lib/elsewhere/values")
+require Rails.root.join("packs/shared/lib/elsewhere/schema")
 require Rails.root.join("packs/shared/lib/ai/task")
 require Rails.root.join("packs/planning/lib/elsewhere/store")
 require Rails.root.join("packs/supply/lib/supply")
