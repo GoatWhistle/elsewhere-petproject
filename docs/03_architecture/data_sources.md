@@ -9,9 +9,11 @@
 | Потребность | Источник | Шлюз | Стоимость | Настоящее? |
 |---|---|---|---|---|
 | Property catalogue — names, coordinates, addresses, photos, ratings, indicative price level | one-time harvest of public listing pages | none | free | real |
-| Coastline distance, POI/restaurant density, street network, road proximity, airport distance | OSM regional extract → PostGIS | none | free | real |
+| POI/restaurant density, street network, road proximity | OSM regional extract → PostGIS | none | free | real |
+| Coastline distance | **ohsome API** (`api.ohsome.org`) | **no key** | free | real |
+| Walkability isochrones, airport transfer duration | **OpenRouteService** (`ORS_API_KEY`) | free account | free tier | real |
 | Climate normals, forecast | Open-Meteo | none (no key) | free, **non-commercial tier** | real |
-| Flight fares + booking links | Ignav (`/fares/one-way`, `/fares/round-trip`, airport search) | free account; playground without signup | free tier | real, live |
+| Flight fares + booking links | Ignav | free account, 1000 free requests, no card | free tier | real, live — **coverage unverified, see A-0** |
 | Origin city prefill | derived from the user's input; IP lookup optional | — | — | — |
 | **Room price for given dates** | **modeled** — calibrated on harvested "from" levels + seasonality | none | free | **synthetic** |
 | Hotel reviews | none | — | — | **absent** |
@@ -49,6 +51,20 @@
 **Не читать из основного API OSM** — их политика прямо говорит, что он для редактирования, а не для проектов
 только на чтение, и отправляет тяжёлых потребителей к выгрузкам. Мы однажды загружаем региональную выгрузку в
 PostGIS. Так и просто лучше: ни ключа, ни лимита, ни задержки, ни сетевой зависимости во время демонстрации.
+
+## География: три источника, намеренно
+
+Выгрузка OSM отвечает на вопрос «что рядом с этим объектом» — плотность POI, рестораны, класс и близость дорог.
+Она локальна, бесплатна и не ограничена, поэтому несёт основную нагрузку.
+
+Две вещи она отвечает плохо, и обе делегированы:
+
+- **Расстояние до береговой линии.** В OSM берег — это `natural=coastline`: незамкнутые линии, а не готовые
+  полигоны. Собирать их руками — день геометрии ради самого важного признака в продукте («к морю»).
+  **ohsome API** отдаёт геометрию напрямую и не требует ключа.
+- **Пешая доступность и время трансфера.** «Дойти пешком» — это изохрона, а не радиус, а трансфер из аэропорта —
+  длительность по маршруту, а не по прямой. **OpenRouteService** отвечает на оба. Его ключ лежит в `ORS_API_KEY`
+  в `.env` и никогда не коммитится.
 
 ## Правила сбора каталога
 
