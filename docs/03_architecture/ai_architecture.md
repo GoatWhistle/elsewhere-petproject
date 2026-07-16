@@ -45,35 +45,68 @@ AI::Task.run(
 )
 ```
 
-Rules the runner enforces:
+Правила, которые исполнитель держит:
 
-- output is validated against a JSON Schema; a malformed response is retried once, then falls back;
-- **`AI::Task.run` returns an `Outcome(value:, degraded:, reason:)`, never a bare value.** When the model is
-  unavailable the fallback is still a real, schema-valid answer, and it would otherwise be indistinguishable from
-  a genuine one — a silent `direction: "increase"` is worse than a visible "we could not read that". Callers must
-  unwrap `.value` and are therefore forced to notice `.degraded?`. Reasons: `model_not_configured`, `circuit_open`,
-  `transport_error`, `invalid_output`, `fallback_error`.
-- **Degradation is surfaced to the user, not swallowed.** Dream parsing degraded → ask for the missing input
-  explicitly. Instruction parsing degraded → say the instruction was not understood and offer the sliders.
-  Explanation generation degraded → render the templated text from the same numbers. Nothing pretends.
-- `AI::Client` returns `AI::Client::Result(value:, usage:)`; an array is always a domain value and is never
-  overloaded as a transport tuple;
-- outputs are constrained to closed vocabularies where one exists (dimensions, directions, risk types) —
-  the model may not invent a dimension;
-- a transport failure opens a short circuit immediately, without spending a second timeout; calls use the
-  deterministic fallback until the circuit closes;
-- a broken fallback cannot turn model unavailability into a 500: the runner logs `fallback_error` and returns a
-  neutral value derived from the declared schema;
-- every call is logged with prompt, response, latency, and cost, because evaluating quality later requires it;
-- no tool has a side effect. The model never books, never cancels, never writes a Future.
+- выход проверяется по JSON Schema; неверный ответ повторяется один раз, затем срабатывает запасной путь;
+- **`AI::Task.run` возвращает `Outcome(value:, degraded:, reason:)`, а не голое значение.** Когда модель
+  недоступна, запасной путь всё равно даёт настоящий и валидный по схеме ответ, который иначе не отличить от
+  подлинного: молчаливое `direction: "increase"` хуже видимого «мы не смогли это прочитать». Вызывающая сторона
+  обязана развернуть `.value` и потому вынуждена заметить `.degraded?`. Причины: `model_not_configured`,
+  `circuit_open`, `transport_error`, `invalid_output`, `fallback_error`;
+- **деградация доводится до пользователя, а не проглатывается.** Разбор Мечты деградировал → явно попросить
+  недостающий ввод. Разбор инструкции деградировал → сказать, что инструкция не понята, и предложить ползунки.
+  Порождение объяснений деградировало → отрисовать шаблонный текст из тех же чисел. Ничто не притворяется;
+- `AI::Client` возвращает `AI::Client::Result(value:, usage:)`; массив всегда доменное значение и никогда не
+  используется как транспортный кортеж;
+- выходы ограничены закрытыми словарями там, где они есть (измерения, направления, типы риска) — модель не может
+  выдумать измерение;
+- отказ транспорта немедленно размыкает короткий предохранитель, не тратя второй таймаут; вызовы идут по
+  детерминированному запасному пути, пока предохранитель не замкнётся;
+- сломанный запасной путь не может превратить недоступность модели в ошибку 500: исполнитель логирует
+  `fallback_error` и возвращает нейтральное значение, выведенное из объявленной схемы;
+- каждый вызов логируется с запросом, ответом, задержкой и стоимостью, потому что оценка качества позже без этого
+  невозможна;
+- ни у одного инструмента нет побочного эффекта. Модель ничего не бронирует, ничего не отменяет и не пишет Future.
 
-## No agent loops
+## Никаких циклов рассуждения
 
-With Living Trip out of scope ([DEC-015](../00_project/decision_log.md)), nothing in the product needs multi-step
-tool use. Every AI job above is a single structured call with a validated schema and a deterministic fallback.
+Раз Living Trip вне объёма ([DEC-015](../00_project/decision_log.md)), многошаговое использование инструментов не
+нужно ничему в продукте. Каждая задача выше — один структурированный вызов с проверяемой схемой и
+детерминированным запасным путём.
 
-An agent loop would add latency, nondeterminism, and cost to problems a single call already solves. The product is
-AI-native because AI does the language work where language is the problem — not because a loop is running.
+Цикл добавил бы задержку, недетерминированность и стоимость к задачам, которые решаются одним вызовом. Продукт
+построен на ИИ потому, что модель делает языковую работу там, где проблема именно языковая, а не потому, что
+где-то крутится цикл.
+
+## Запуск модели локально
+
+Исполнитель говорит по протоколу, совместимому с OpenAI, поэтому модель — конфигурация, а не архитектура. Годится
+любая среда выполнения; путь через Ollama короче.
+
+```sh
+ollama serve                     # http://localhost:11434/v1
+ollama pull qwen3:8b             # 14b, если хватает памяти
+```
+
+`.env`:
+
+```
+LLM_BASE_URL=http://localhost:11434/v1
+LLM_MODEL=qwen3:8b
+LLM_TIMEOUT_SECONDS=120
+```
+
+LM Studio — альтернатива: загрузить модель, запустить локальный сервер, направить `LLM_BASE_URL` на
+`http://localhost:1234/v1`.
+
+**Проверить, прежде чем доверять.** Важны два свойства, и ни одно не гарантировано на таком размере: отвечает ли
+модель по-русски, не сползая в английский, и возвращает ли JSON, соответствующий схеме, при `response_format`.
+Прогнать десять персон через `AI::Task` и посчитать долю валидных по схеме ответов; если доля плохая, попробовать
+вариант на 14B, прежде чем делать выводы о самой конструкции.
+
+**Приложение обязано работать с выключенной моделью.** Остановить среду выполнения и запустить тесты: каждая
+задача уходит на детерминированный запасной путь, а `Outcome#degraded?` истинно. Если вместо этого что-то ломается,
+это баг вызывающей стороны.
 
 ## Поиск кандидатов
 

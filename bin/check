@@ -1,18 +1,24 @@
 #!/bin/sh
-# Everything that used to run in CI, in one command. Run before you push.
+# Everything that used to run in CI, in one command. The pre-push hook runs it for you.
+#
+# Ruby steps go through Docker when the host cannot run this project's Ruby, the same way bin/setup does —
+# a check that only works on one person's laptop is not a check.
 set -e
 cd "$(dirname "$0")/.."
 
-echo "→ packwerk boundaries"
-bin/packwerk_check
-
-echo "→ rspec"
-if command -v bundle >/dev/null 2>&1 && bundle check >/dev/null 2>&1; then
-  RAILS_ENV=test bundle exec rspec
+if ruby -e 'exit(Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.3") ? 0 : 1)' 2>/dev/null \
+   && command -v bundle >/dev/null 2>&1 && bundle check >/dev/null 2>&1; then
+  ruby_run=""
 else
   if docker compose version >/dev/null 2>&1; then compose="docker compose"; else compose="docker-compose"; fi
-  $compose run --rm -e RAILS_ENV=test app bundle exec rspec
+  ruby_run="$compose run --rm -e RAILS_ENV=test app"
 fi
+
+echo "→ packwerk boundaries"
+$ruby_run bin/packwerk_check
+
+echo "→ rspec"
+if [ -z "$ruby_run" ]; then RAILS_ENV=test bundle exec rspec; else $ruby_run bundle exec rspec; fi
 
 echo "→ frontend"
 npm run check --prefix web

@@ -192,11 +192,11 @@ score = Σ(wᵢ × sᵢ) / Σ(wᵢ)   по оценённым измерения
 
 ### Следствия
 
-- **Nothing will score 98%.** The realistic band is roughly 0.6–0.9.
-- The `94 / 91 / 87` figures in `idea.txt` are marketing copy, not a target. We do not bend the maths to reach
-  them, and we do not rescale for display — that would be exactly the dishonesty this project spent its design
-  removing.
-- The number's job is comparison, not flattery; honesty survives because contributions are always shown.
+- **Ничто не наберёт 98%.** Реалистичная полоса — примерно 0,6–0,9.
+- Числа `94 / 91 / 87` из [original_idea.md](original_idea.md) — рекламный текст, а не цель. Мы не гнём математику,
+  чтобы до них дотянуться, и не перемасштабируем для показа: это была бы ровно та нечестность, на устранение
+  которой ушло всё проектирование.
+- Задача числа — сравнение, а не лесть; честность держится тем, что вклады показываются всегда.
 
 ---
 

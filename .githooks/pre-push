@@ -1,0 +1,4 @@
+#!/bin/sh
+# There is no CI (DEC-019), so this hook is the only enforcement that exists.
+# Deliberate bypass: git push --no-verify
+exec bin/check

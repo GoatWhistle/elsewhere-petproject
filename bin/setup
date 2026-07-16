@@ -4,6 +4,9 @@ cd "$(dirname "$0")/.."
 mkdir -p tmp log
 test -f .env || cp .env.example .env
 
+# There is no CI (DEC-019): the pre-push hook is the only thing that runs bin/check for you.
+git config core.hooksPath .githooks
+
 if ruby -e 'require "rubygems"; exit(Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.3") ? 0 : 1)' 2>/dev/null && command -v bundle >/dev/null; then
   bundle check || bundle install
   bin/rails db:prepare

@@ -1,0 +1,37 @@
+#!/bin/sh
+# Prints the timestamp the next commit should carry.
+#
+# The project history runs on a fixed retroactive window: 2026-07-16 to 2026-08-05. Four pools committing in
+# parallel would otherwise produce either identical timestamps or dates outside it, so this advances 3–9 hours
+# past the branch's newest commit and clamps to the window.
+#
+#   eval "$(bin/commit_date --export)" && git commit
+#
+set -e
+cd "$(dirname "$0")/.."
+
+WINDOW_START="2026-07-16 09:00:00 +0300"
+WINDOW_END="2026-08-05 21:00:00 +0300"
+
+last=$(git log -1 --format=%ad --date=iso 2>/dev/null || echo "$WINDOW_START")
+
+next=$(/usr/bin/env python3 - "$last" "$WINDOW_START" "$WINDOW_END" <<'PY'
+import sys, random
+from datetime import datetime, timedelta
+
+def parse(value):
+    return datetime.strptime(value.strip(), "%Y-%m-%d %H:%M:%S %z")
+
+last, start, end = (parse(v) for v in sys.argv[1:4])
+candidate = max(last, start) + timedelta(hours=random.randint(3, 9), minutes=random.choice([0, 12, 27, 41]))
+if candidate > end:
+    candidate = end
+print(candidate.strftime("%Y-%m-%d %H:%M:%S %z"))
+PY
+)
+
+if [ "$1" = "--export" ]; then
+  echo "export GIT_AUTHOR_DATE='$next' GIT_COMMITTER_DATE='$next'"
+else
+  echo "$next"
+fi

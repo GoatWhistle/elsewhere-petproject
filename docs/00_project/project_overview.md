@@ -10,8 +10,7 @@ Elsewhere — платформа планирования путешествий
 Продуктовая идея берёт начало в [original_idea.md](original_idea.md). Это вход, а не источник правды —
 источником правды является дерево `/docs`.
 
-The product concept originates from `idea.txt` (Russian, in the repository root) and the working contract in
-`elsewhere_master_architect_prompt.txt`. Both are inputs, not the source of truth — this `/docs` tree is.
+## Метод работы
 
 1. Понять и усилить продукт.
 2. Найти недостающие продуктовые и бизнесовые решения.
@@ -28,16 +27,4 @@ The product concept originates from `idea.txt` (Russian, in the repository root)
 
 ## Исходные документы
 
-## Milestones
-
-| # | Milestone | Status |
-|---|---|---|
-| 1 | Product & Domain Specification v1 | IN PROGRESS |
-| 2 | System Architecture v1 | NOT STARTED |
-| 3 | Implementation Blueprint | NOT STARTED |
-
-
-## Source documents
-
-- `idea.txt` — original product idea (RU)
-- `elsewhere_master_architect_prompt.txt` — the working contract
+- [original_idea.md](original_idea.md) — исходная формулировка продуктовой идеи
