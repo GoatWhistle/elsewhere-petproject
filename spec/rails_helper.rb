@@ -1,4 +1,6 @@
-ENV["RAILS_ENV"] ||= "test"
+# Forced, not defaulted: docker-compose exports RAILS_ENV=development for the app
+# service, and `||=` would let the suite run against the development database.
+ENV["RAILS_ENV"] = "test"
 require_relative "../config/environment"
 abort("The Rails environment is running in production mode!") if Rails.env.production?
 require "rspec/rails"

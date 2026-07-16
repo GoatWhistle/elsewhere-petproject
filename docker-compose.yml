@@ -26,6 +26,7 @@ services:
     environment:
       RAILS_ENV: development
       DATABASE_URL: postgres://elsewhere:elsewhere@postgres/elsewhere_development
+      TEST_DATABASE_URL: postgres://elsewhere:elsewhere@postgres/elsewhere_test
       REDIS_URL: redis://redis:6379/0
       SUPPLY_MODE: fixture
     depends_on:
