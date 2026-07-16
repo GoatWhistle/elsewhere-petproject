@@ -48,6 +48,14 @@ AI::Task.run(
 Rules the runner enforces:
 
 - output is validated against a JSON Schema; a malformed response is retried once, then falls back;
+- **`AI::Task.run` returns an `Outcome(value:, degraded:, reason:)`, never a bare value.** When the model is
+  unavailable the fallback is still a real, schema-valid answer, and it would otherwise be indistinguishable from
+  a genuine one — a silent `direction: "increase"` is worse than a visible "we could not read that". Callers must
+  unwrap `.value` and are therefore forced to notice `.degraded?`. Reasons: `model_not_configured`, `circuit_open`,
+  `transport_error`, `invalid_output`, `fallback_error`.
+- **Degradation is surfaced to the user, not swallowed.** Dream parsing degraded → ask for the missing input
+  explicitly. Instruction parsing degraded → say the instruction was not understood and offer the sliders.
+  Explanation generation degraded → render the templated text from the same numbers. Nothing pretends.
 - `AI::Client` returns `AI::Client::Result(value:, usage:)`; an array is always a domain value and is never
   overloaded as a transport tuple;
 - outputs are constrained to closed vocabularies where one exists (dimensions, directions, risk types) —

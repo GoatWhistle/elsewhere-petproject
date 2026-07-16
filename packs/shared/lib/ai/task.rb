@@ -4,6 +4,12 @@ require_relative "client"
 
 module AI
   module Task
+    # Every call returns an Outcome, never a bare value: the fallback is a real schema-valid value and would
+    # otherwise be indistinguishable from a model answer.
+    Outcome = Struct.new(:value, :degraded, :reason, keyword_init: true) do
+      def degraded?; degraded; end
+    end
+
     module_function
 
     @logs = []
@@ -14,10 +20,10 @@ module AI
       attempts = 0
       started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       unless response || model_configured?
-        return recover(task, input, schema, fallback, attempts, started)
+        return recover(task, input, schema, fallback, attempts, started, nil, :model_not_configured)
       end
       if !response && circuit_open?
-        return recover(task, input, schema, fallback, attempts, started, StandardError.new("LLM circuit open"))
+        return recover(task, input, schema, fallback, attempts, started, StandardError.new("LLM circuit open"), :circuit_open)
       end
 
       begin
@@ -32,13 +38,13 @@ module AI
         validate!(result, schema) if schema
         reset_circuit! unless response
         @logs << log_entry(task, input, result, attempts, started, outcome.usage, fallback: false)
-        result
+        Outcome.new(value: result, degraded: false, reason: nil)
       rescue Client::TransportError => error
         trip_circuit! unless response
-        recover(task, input, schema, fallback, attempts, started, error)
+        recover(task, input, schema, fallback, attempts, started, error, :transport_error)
       rescue StandardError => error
         retry if attempts < 2
-        recover(task, input, schema, fallback, attempts, started, error)
+        recover(task, input, schema, fallback, attempts, started, error, :invalid_output)
       end
     end
 
@@ -92,20 +98,22 @@ module AI
       (usage_value(usage, "prompt_tokens").to_i * input + usage_value(usage, "completion_tokens").to_i * output).round.to_i
     end
 
-    def recover(task, input, schema, fallback, attempts, started, error = nil)
+    def recover(task, input, schema, fallback, attempts, started, error = nil, reason = :unknown)
       fallback_error = nil
       begin
         result = fallback ? fallback.call(input) : neutral_value(schema)
         validate!(result, schema) if schema
       rescue StandardError => caught
         fallback_error = caught
+        reason = :fallback_error
         result = neutral_value(schema)
       end
       entry = log_entry(task, input, result, attempts, started, {}, fallback: true)
+      entry[:reason] = reason
       entry[:error] = error.message if error
       entry[:fallback_error] = fallback_error.message if fallback_error
       @logs << entry
-      result
+      Outcome.new(value: result, degraded: true, reason: reason)
     end
 
     # Schema-derived neutrals keep a broken fallback from turning model unavailability into an error.

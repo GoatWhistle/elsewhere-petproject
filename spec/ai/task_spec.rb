@@ -3,14 +3,32 @@ require "rails_helper"
 RSpec.describe AI::Task do
   let(:schema) { { "type" => "object", "additionalProperties" => false, "properties" => { "direction" => { "type" => "string", "enum" => %w[increase decrease] } }, "required" => ["direction"] } }
 
-  before { described_class.reset! }
+  it "marks a real model answer as not degraded" do
+    outcome = described_class.run(task: :instruction, input: {}, schema: schema, response: ->(_) { { "direction" => "decrease" } })
 
-  it "retries malformed nested output and falls back" do
+    expect(outcome.value).to eq("direction" => "decrease")
+    expect(outcome).not_to be_degraded
+    expect(outcome.reason).to be_nil
+  end
+
+  it "retries malformed nested output, falls back, and reports the degradation" do
     attempts = 0
-    result = described_class.run(task: :instruction, input: {}, schema: schema, response: ->(_) { attempts += 1; { "direction" => "invent" } }, fallback: ->(_) { { "direction" => "increase" } })
+    outcome = described_class.run(task: :instruction, input: {}, schema: schema, response: ->(_) { attempts += 1; { "direction" => "invent" } }, fallback: ->(_) { { "direction" => "increase" } })
+
     expect(attempts).to eq(2)
-    expect(result).to eq("direction" => "increase")
-    expect(described_class.logs.last).to include(:latency_ms, :input, :output, :cost_usd_micros)
+    expect(outcome.value).to eq("direction" => "increase")
+    expect(outcome).to be_degraded
+    expect(outcome.reason).to eq(:invalid_output)
+    expect(described_class.logs.last).to include(:latency_ms, :input, :output, :cost_usd_micros, reason: :invalid_output)
+  end
+
+  it "reports degradation when no model is configured" do
+    allow(described_class).to receive(:model_configured?).and_return(false)
+
+    outcome = described_class.run(task: :instruction, input: {}, schema: schema, fallback: ->(_) { { "direction" => "increase" } })
+
+    expect(outcome).to be_degraded
+    expect(outcome.reason).to eq(:model_not_configured)
   end
 
   it "logs token usage and configured cost" do
@@ -26,31 +44,36 @@ RSpec.describe AI::Task do
   end
 
   it "preserves array values from response and fallback callables" do
-    array_schema = { "type" => "array", "items" => { "type" => "object", "properties" => { "dimension" => { "type" => "string" } }, "required" => ["dimension"] } }
-    elements = [{ "dimension" => "quiet" }, { "dimension" => "sea_access" }]
+    array_schema = { "type" => "array", "items" => { "type" => "object", "required" => ["dimension"] } }
+    elements = [{ "dimension" => "sea_access" }, { "dimension" => "quiet" }]
 
-    expect(described_class.run(task: :dna, input: {}, schema: array_schema, response: ->(_) { elements }, fallback: ->(_) { [] })).to eq(elements)
-    expect(described_class.run(task: :dna, input: {}, schema: array_schema, fallback: ->(_) { elements })).to eq(elements)
+    outcome = described_class.run(task: :dream_parsing, input: {}, schema: array_schema, response: ->(_) { elements })
+
+    expect(outcome.value).to eq(elements)
+    expect(outcome).not_to be_degraded
   end
 
   it "replaces an invalid fallback with a schema-derived neutral value" do
-    result = described_class.run(task: :instruction, input: {}, schema: schema, response: ->(_) { raise "model failed" }, fallback: ->(_) { { "direction" => "invent" } })
+    outcome = described_class.run(task: :instruction, input: {}, schema: schema, response: ->(_) { raise "model down" }, fallback: ->(_) { { "direction" => "sideways" } })
 
-    expect(result).to eq("direction" => "increase")
-    expect(described_class.logs.last.fetch(:fallback_error)).to match(/closed vocabulary/)
+    expect(outcome.value).to eq("direction" => "increase")
+    expect(outcome).to be_degraded
+    expect(outcome.reason).to eq(:fallback_error)
+    expect(described_class.logs.last).to include(:fallback_error)
   end
 
   it "opens the circuit after one transport failure" do
-    allow(ENV).to receive(:[]).and_call_original
-    allow(ENV).to receive(:[]).with("LLM_BASE_URL").and_return("http://llm.test/v1")
-    allow(ENV).to receive(:[]).with("LLM_MODEL").and_return("test")
+    described_class.reset!
+    allow(described_class).to receive(:model_configured?).and_return(true)
     client = instance_double(AI::Client)
     allow(AI::Client).to receive(:new).and_return(client)
-    expect(client).to receive(:call).once.and_raise(AI::Client::TransportError, "connection refused")
-    fallback = ->(_) { { "direction" => "increase" } }
+    allow(client).to receive(:call).and_raise(AI::Client::TransportError, "connection refused")
 
-    expect(described_class.run(task: :instruction, input: {}, schema: schema, fallback: fallback)).to eq("direction" => "increase")
-    expect(described_class.run(task: :instruction, input: {}, schema: schema, fallback: fallback)).to eq("direction" => "increase")
-    expect(described_class.logs.last.fetch(:error)).to eq("LLM circuit open")
+    first = described_class.run(task: :instruction, input: {}, schema: schema, fallback: ->(_) { { "direction" => "increase" } })
+    second = described_class.run(task: :instruction, input: {}, schema: schema, fallback: ->(_) { { "direction" => "increase" } })
+
+    expect(first.reason).to eq(:transport_error)
+    expect(second.reason).to eq(:circuit_open)
+    expect(client).to have_received(:call).once
   end
 end
