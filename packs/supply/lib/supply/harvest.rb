@@ -19,14 +19,16 @@ module Supply
       end
     end
 
-    # A city as the caller declares it. Which cities these are is curation (A-2), not collection.
-    City = Struct.new(:slug, :city_code, :name, :country, keyword_init: true)
+    # A city as the caller declares it: which cities and which geography is curation, not collection.
+    City = Struct.new(:slug, :city_code, :name, :country, :geography_type, keyword_init: true)
 
     SOURCE = "101hotels".freeze
 
     module_function
 
-    def run(cities:, categories_per_city: 3, refresh: false, cache: PageCache.new, persist: true, log: nil)
+    # `offline: true` skips a cache miss instead of fetching it, so `db:seed` never starts a web harvest.
+    def run(cities:, categories: [], refresh: false, cache: PageCache.new, persist: true,
+            offline: false, log: nil)
       summary = Summary.new(pages_requested: 0, pages_from_cache: 0, pages_fetched: 0, properties_seen: 0,
                             properties_written: 0, destinations_written: 0, refusals: 0, errors: 0,
                             stopped: nil, cities: [])
@@ -34,14 +36,14 @@ module Supply
       cities.map { |city| coerce(city) }.each do |city|
         break if summary.stopped
 
-        records = collect(city, categories_per_city, refresh, cache, summary, log)
+        records = collect(city, categories, refresh, cache, offline, summary, log)
         next if records.empty?
 
         summary.properties_seen += records.length
         summary.cities << city.city_code
         next unless persist
 
-        written = persist!(city, records)
+        written = persist!(city, records, summary, log)
         summary.destinations_written += 1
         summary.properties_written += written
       end
@@ -49,15 +51,18 @@ module Supply
       summary
     end
 
-    def collect(city, categories_per_city, refresh, cache, summary, log)
-      landing = page(Catalogue101.city_url(city.slug), refresh, cache, summary, log)
+    def collect(city, categories, refresh, cache, offline, summary, log)
+      landing = page(Catalogue101.city_url(city.slug), refresh, cache, offline, summary, log)
       return [] unless landing
 
+      # Named slices, not whatever the page links first: alphabetical order sampled 1–2 stars in one city and
+      # 4–5 in another, so the price axis measured the sampling. Every city gets the same slices or none.
       pages = [landing]
-      Catalogue101.categories_on(landing, city.slug).sort.first(categories_per_city).each do |category|
+      available = Catalogue101.categories_on(landing, city.slug)
+      (categories & available).each do |category|
         break if summary.stopped
 
-        body = page(Catalogue101.category_url(city.slug, category), refresh, cache, summary, log)
+        body = page(Catalogue101.category_url(city.slug, category), refresh, cache, offline, summary, log)
         pages << body if body
       end
 
@@ -68,7 +73,7 @@ module Supply
     end
 
     # Returns the page body, or nil — and sets `summary.stopped` if the source refused us, which ends the pass.
-    def page(url, refresh, cache, summary, log)
+    def page(url, refresh, cache, offline, summary, log)
       path = URI.parse(url).path
       unless Catalogue101.allowed?(path)
         summary.errors += 1
@@ -78,6 +83,12 @@ module Supply
 
       summary.pages_requested += 1
       entry = cache.fetch(url, refresh: refresh) do
+        if offline
+          summary.errors += 1
+          log&.call("not cached, and offline: #{path}")
+          next nil
+        end
+
         response = Http.get(url, timeout: 30, min_interval: Catalogue101::MIN_INTERVAL_S)
 
         if response.refused?
@@ -102,13 +113,14 @@ module Supply
       entry.body
     end
 
-    def persist!(city, records)
+    def persist!(city, records, summary = nil, log = nil)
       harvested_at = Time.now.utc
       points = records.map { |record| [record[:lat].to_f, record[:lon].to_f] }
 
       destination = DestinationRecord.find_or_initialize_by(city_code: city.city_code)
       destination.assign_attributes(
         name: city.name, country: city.country, source: SOURCE, source_slug: city.slug,
+        geography_type: city.geography_type,
         # No city centre is published on these pages, so this is the middle of what we harvested and says so.
         # A-3 replaces it with the OSM place node.
         lat: median(points.map(&:first)), lon: median(points.map(&:last)),
@@ -116,17 +128,29 @@ module Supply
       )
       destination.save!
 
-      records.count { |record| upsert_property(destination, city, record, harvested_at) }
+      records.count do |record|
+        guarded(summary, log, "#{SOURCE}:#{record[:source_id]}") { upsert_property(destination, city, record, harvested_at) }
+      end
+    end
+
+    # One unusable row must not end the pass; failures are counted and named, never swallowed.
+    def guarded(summary, log, what)
+      yield
+    rescue StandardError => e
+      summary.errors += 1 if summary
+      log&.call("skipped #{what}: #{e.class}: #{e.message}")
+      false
     end
 
     def upsert_property(destination, city, record, harvested_at)
       rating, rating_scale = Microdata.rating(record)
+      price_level_minor, price_level_note = Microdata.price_level(record)
       property = PropertyRecord.find_or_initialize_by(catalogue_id: "#{SOURCE}:#{record[:source_id]}")
       property.assign_attributes(
         source: SOURCE, destination_id: destination.id, city_code: city.city_code,
         name: record[:name], lat: record[:lat], lon: record[:lon], address: record[:address],
         rating: rating, rating_scale: rating_scale, review_count: record[:review_count]&.to_i,
-        price_level_minor: Microdata.price_minor(record),
+        price_level_minor: price_level_minor, price_level_note: price_level_note,
         price_currency: (record[:price_currency] || "RUB"),
         price_level_text: record[:price_level_text],
         photos: record[:photos], harvested_at: harvested_at,
@@ -149,7 +173,8 @@ module Supply
 
       attributes = city.transform_keys(&:to_sym)
       City.new(slug: attributes.fetch(:slug), city_code: attributes.fetch(:city_code),
-               name: attributes.fetch(:name), country: attributes.fetch(:country, "RU"))
+               name: attributes.fetch(:name), country: attributes.fetch(:country, "RU"),
+               geography_type: attributes[:geography_type])
     end
   end
 end

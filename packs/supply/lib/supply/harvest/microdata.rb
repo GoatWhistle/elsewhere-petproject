@@ -72,6 +72,11 @@ module Supply
         CGI.unescapeHTML(fragment.gsub(/<[^>]*>/, " ")).gsub(/\s+/, " ").strip
       end
 
+      # What a nightly rate can plausibly be, in minor units: 300 ₽ to 500 000 ₽. Not a taste filter — the
+      # source publishes junk like "от 1 400 000 000 руб." on the Sochi page, and anchoring the modeled rate on
+      # that would poison every price built from it. Outside the band is absent with a reason, not observed.
+      PLAUSIBLE_MINOR = (30_000..50_000_000).freeze
+
       # "от 5 200 руб. средняя цена за номер" / data-price-value="5200" → 520000 minor units.
       # Money is an integer in minor units, never a float, so the decimal goes through BigDecimal.
       def price_minor(record)
@@ -82,6 +87,15 @@ module Supply
         return nil unless normalised.match?(/\A\d+(?:\.\d+)?\z/)
 
         (BigDecimal(normalised) * 100).round.to_i
+      end
+
+      # => [minor_units, note]. Exactly one of the two is ever non-nil.
+      def price_level(record)
+        minor = price_minor(record)
+        return [nil, "the listing publishes no price"] if minor.nil?
+        return [nil, "source published #{minor / 100} #{record[:price_currency] || "RUB"} per night — outside the plausible range"] unless PLAUSIBLE_MINOR.cover?(minor)
+
+        [minor, nil]
       end
 
       # "9.4 / 10" → [9.4, 10]: the scale travels with the number.

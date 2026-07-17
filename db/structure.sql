@@ -18,6 +18,7 @@ DROP INDEX IF EXISTS public.index_jobs_on_status;
 DROP INDEX IF EXISTS public.index_future_versions_on_session_id;
 DROP INDEX IF EXISTS public.index_future_versions_on_lineage_id_and_version;
 DROP INDEX IF EXISTS public.index_destinations_on_point;
+DROP INDEX IF EXISTS public.index_destinations_on_geography_type;
 DROP INDEX IF EXISTS public.index_destinations_on_city_code;
 ALTER TABLE IF EXISTS ONLY public.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
 ALTER TABLE IF EXISTS ONLY public.properties DROP CONSTRAINT IF EXISTS properties_pkey;
@@ -170,7 +171,8 @@ CREATE TABLE public.destinations (
     source_slug character varying,
     centre_source character varying DEFAULT 'property_centroid'::character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    geography_type character varying
 );
 
 
@@ -233,14 +235,15 @@ CREATE TABLE public.properties (
     rating numeric(3,1),
     rating_scale integer,
     review_count integer,
-    price_level_minor integer,
+    price_level_minor bigint,
     price_currency character varying(3),
     price_level_text character varying,
     photos jsonb DEFAULT '[]'::jsonb NOT NULL,
     source_url character varying NOT NULL,
     harvested_at timestamp(6) without time zone NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    updated_at timestamp(6) without time zone NOT NULL,
+    price_level_note character varying
 );
 
 
@@ -317,6 +320,13 @@ CREATE UNIQUE INDEX index_destinations_on_city_code ON public.destinations USING
 
 
 --
+-- Name: index_destinations_on_geography_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_destinations_on_geography_type ON public.destinations USING btree (geography_type);
+
+
+--
 -- Name: index_destinations_on_point; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -387,6 +397,8 @@ ALTER TABLE ONLY public.properties
 SET search_path TO public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260719100000'),
+('20260719090000'),
 ('20260718090000'),
 ('20260702090000');
 

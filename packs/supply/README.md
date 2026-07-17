@@ -54,6 +54,51 @@ everything seasonal built on top of it in A-7 is modeled. The source says so its
 so until A-3 imports the OSM place node it is `property_centroid` — the middle of what we collected, which is a
 different claim and is labelled as one.
 
+## Corpus — which destinations, and the proof it is not homogeneous (A-2)
+
+Seven destinations, chosen from slugs the A-0 probe saw return a full listing, each with a real IATA code —
+a destination we cannot price a flight to is not a destination.
+
+| | destinations | why |
+|---|---|---|
+| **city** | LED · KZN · KGD | harvest most reliably and have the densest OSM data, so they carry the demo |
+| **mountains** | MRV (Кисловодск) · NOZ (Шерегеш) | the contrast that makes a Future genuinely different |
+| **sea** | AER (Сочи) · AAQ (Анапа) | two, so "warm sea" is not a single price point |
+
+```sh
+bin/rails db:seed                                             # rebuild from pages already on disk
+bin/rails runner 'puts Supply::Corpus.seed!(offline: false, log: ->(l){puts l})'   # collect them first
+bin/rails runner 'require "json"; puts JSON.pretty_generate(Supply::Corpus.coverage)'
+```
+
+**Every city is asked for the same slices** — its main listing plus `inexpensive` and `expensive`, both verified
+present on all seven. An earlier pass took whichever categories came first alphabetically, which sampled 1–2
+stars in one city and 4–5 in another; the "cheap/expensive axis" then measured the sampling rather than the
+destinations. Comparability is the whole point of the number.
+
+Which is why the price axis is read at **property** level: 403 observed price levels from 360 ₽ to 99 999 ₽,
+p90/p10 ≈ **39×**, and **all seven** destinations offer options on both sides of the corpus median. Destination
+medians converge (4 700–6 500 ₽) *by design* — a traveller choosing Kazan can still choose cheap or dear, and
+comparing city medians would score that as "no spread" and be exactly wrong.
+
+The popularity axis (55 → 772 reviews per property, **14×**) is catalogue review volume — the source
+[experience_match.md](../../docs/01_product/experience_match.md) names for `crowds`. It is a popularity proxy,
+and it says so in its own `basis` field. It is not a crowd measurement.
+
+Geography is the one axis that is a **judgement**: nothing in the harvest says "this is a mountain town". It is
+declared in `Corpus::MANIFEST` with the reason, rather than derived from a number that would only look objective.
+
+`packs/supply/fixtures/corpus_profile.json` is the real corpus as it came out, so the spec asserts the real
+spread without needing a harvested database. Regenerate it with
+`bin/rails runner 'File.write("packs/supply/fixtures/corpus_profile.json", Supply::Corpus.snapshot)'`.
+
+### Prices the source itself gets wrong
+
+`properties.price_level_minor` is only set for a plausible nightly rate (300 ₽ – 500 000 ₽). Outside that band
+it is `NULL` and `price_level_note` says why — the Sochi listing really does publish
+*"от 1 400 000 000 руб. средняя цена за номер"*, and anchoring A-7's modeled rate on it would poison every price
+built from it. Absence with a reason, never silent absence. Five of 408 properties have no observed base.
+
 ## Geo
 
 `lat`/`lon` are plain numerics; PostGIS is reached through a **GIST expression index** on

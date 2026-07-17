@@ -51,7 +51,7 @@ RSpec.describe Supply::Harvest do
     it "puts real properties with coordinates in the database" do
       cache = cache_with(Supply::Harvest::Catalogue101.city_url("sochi") => excerpt)
 
-      summary = described_class.run(cities: [city], categories_per_city: 0, cache: cache)
+      summary = described_class.run(cities: [city], categories: [], cache: cache)
 
       expect(summary.properties_written).to eq(2)
       expect(summary.pages_fetched).to eq(0)
@@ -66,8 +66,8 @@ RSpec.describe Supply::Harvest do
     it "is re-runnable: a second pass changes nothing and re-requests nothing" do
       cache = cache_with(Supply::Harvest::Catalogue101.city_url("sochi") => excerpt)
 
-      first = described_class.run(cities: [city], categories_per_city: 0, cache: cache)
-      second = described_class.run(cities: [city], categories_per_city: 0, cache: cache)
+      first = described_class.run(cities: [city], categories: [], cache: cache)
+      second = described_class.run(cities: [city], categories: [], cache: cache)
 
       expect(second.pages_fetched).to eq(0)
       expect(second.properties_written).to eq(first.properties_written)
@@ -81,7 +81,7 @@ RSpec.describe Supply::Harvest do
         urls[Supply::Harvest::Catalogue101.category_url("sochi", category)] = excerpt
       end
 
-      summary = described_class.run(cities: [city], categories_per_city: 3, cache: cache_with(urls))
+      summary = described_class.run(cities: [city], categories: %w[1stars 2stars 3_4_stars], cache: cache_with(urls))
 
       expect(summary.pages_requested).to eq(4)
       expect(summary.pages_from_cache).to eq(4)

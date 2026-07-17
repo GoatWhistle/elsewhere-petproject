@@ -4,6 +4,7 @@ require_relative "../../shared/lib/elsewhere/values"
 require_relative "supply/http"
 require_relative "supply/page_cache"
 require_relative "supply/harvest"
+require_relative "supply/corpus"
 
 module Supply
   def self.adapter
@@ -44,12 +45,92 @@ module Supply
     end
   end
 
+  # Two sources behind one signature (DEC-005): the fixtures other packages develop against, and the harvested
+  # corpus. Neither is a provider call, so both read `cached`, never `live`.
+  module Sources
+    # `axes` filters and does not label: the contract's Destination schema is closed, so a geography type
+    # cannot travel on it and a caller asks for one type at a time (DEC-028).
+    module Axes
+      module_function
+
+      def match?(geography_type, axes)
+        return true if axes.nil? || axes.empty?
+
+        wanted = Array(axes[:geography] || axes["geography"])
+        wanted.empty? || wanted.map(&:to_s).include?(geography_type.to_s)
+      end
+    end
+
+    module Fixtures
+      # The three fixture destinations and the geography each stands for. A surprise here is a surprise
+      # everywhere, so they do not change.
+      GEOGRAPHY = { "AER" => "sea", "MRV" => "mountains", "LED" => "city" }.freeze
+
+      module_function
+
+      def destinations(axes: nil)
+        FixtureData.destinations.select { |d| Axes.match?(GEOGRAPHY[d.city_code], axes) }
+      end
+
+      def destination(city_code:) = FixtureData.destinations.find { |d| d.city_code == city_code }
+      def properties(city_code:, limit: 20) = FixtureData.properties.select { |p| p.city_code == city_code }.first(limit)
+      def property(id:) = FixtureData.properties.find { |p| p.catalogue_id == id }
+    end
+
+    module Database
+      module_function
+
+      def destinations(axes: nil)
+        scope = DestinationRecord.order(:city_code)
+        wanted = Array(axes && (axes[:geography] || axes["geography"])).map(&:to_s)
+        scope = scope.where(geography_type: wanted) if wanted.any?
+        scope.map { |record| destination_value(record) }
+      end
+
+      def destination(city_code:)
+        record = DestinationRecord.find_by(city_code: city_code)
+        record && destination_value(record)
+      end
+
+      # Ordered so "the top few in this city" is the same few every run; row order must not move a Future.
+      def properties(city_code:, limit: 20)
+        PropertyRecord.where(city_code: city_code)
+                      .order(Arel.sql("rating DESC NULLS LAST, review_count DESC NULLS LAST, catalogue_id"))
+                      .limit(limit).map { |record| property_value(record) }
+      end
+
+      def property(id:)
+        record = PropertyRecord.find_by(catalogue_id: id)
+        record && property_value(record)
+      end
+
+      def destination_value(record)
+        Elsewhere::Values::Destination.new(
+          city_code: record.city_code, name: record.name, country: record.country,
+          coordinates: { "lat" => record.lat.to_f, "lon" => record.lon.to_f }, freshness: "cached"
+        )
+      end
+
+      def property_value(record)
+        Elsewhere::Values::Property.new(
+          catalogue_id: record.catalogue_id, name: record.name, city_code: record.city_code,
+          coordinates: { "lat" => record.lat.to_f, "lon" => record.lon.to_f },
+          rating: record.rating&.to_f,
+          # Minor units, as every amount of money in this system is.
+          price_level: record.price_level_minor, freshness: "cached"
+        )
+      end
+    end
+  end
+
   module Catalog
     module_function
-    def destinations(axes: nil); FixtureData.destinations; end
-    def destination(city_code:); FixtureData.destinations.find { |d| d.city_code == city_code }; end
-    def properties(city_code:, limit: 20); FixtureData.properties.select { |p| p.city_code == city_code }.first(limit); end
-    def property(id:); FixtureData.properties.find { |p| p.catalogue_id == id }; end
+
+    def source = Backend.current.catalog
+    def destinations(axes: nil) = source.destinations(axes: axes)
+    def destination(city_code:) = source.destination(city_code: city_code)
+    def properties(city_code:, limit: 20) = source.properties(city_code: city_code, limit: limit)
+    def property(id:) = source.property(id: id)
   end
 
   module Rates
@@ -94,7 +175,7 @@ module Supply
 
   module Adapters
     class Fixture
-      def catalog; Catalog; end
+      def catalog; Sources::Fixtures; end
       def rates; Rates; end
       def flights; Flights; end
       def geo; Geo; end
@@ -103,7 +184,10 @@ module Supply
     end
     # The seam for Ignav, Open-Meteo and the harvested stores. It keeps the captured corpus so a demo stays
     # deterministic until credentials and imports are configured.
-    class Live < Fixture; end
+    class Live < Fixture
+      # The corpus is harvested and stored locally, so it is available in live mode without a provider call.
+      def catalog; Sources::Database; end
+    end
   end
 
   module Backend
