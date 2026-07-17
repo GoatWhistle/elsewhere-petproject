@@ -9,18 +9,29 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+ALTER TABLE IF EXISTS ONLY public.properties DROP CONSTRAINT IF EXISTS fk_rails_26a568e578;
+DROP INDEX IF EXISTS public.index_properties_on_point;
+DROP INDEX IF EXISTS public.index_properties_on_destination_id;
+DROP INDEX IF EXISTS public.index_properties_on_city_code;
+DROP INDEX IF EXISTS public.index_properties_on_catalogue_id;
 DROP INDEX IF EXISTS public.index_jobs_on_status;
 DROP INDEX IF EXISTS public.index_future_versions_on_session_id;
 DROP INDEX IF EXISTS public.index_future_versions_on_lineage_id_and_version;
+DROP INDEX IF EXISTS public.index_destinations_on_point;
+DROP INDEX IF EXISTS public.index_destinations_on_city_code;
 ALTER TABLE IF EXISTS ONLY public.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
+ALTER TABLE IF EXISTS ONLY public.properties DROP CONSTRAINT IF EXISTS properties_pkey;
 ALTER TABLE IF EXISTS ONLY public.planning_sessions DROP CONSTRAINT IF EXISTS planning_sessions_pkey;
 ALTER TABLE IF EXISTS ONLY public.jobs DROP CONSTRAINT IF EXISTS jobs_pkey;
 ALTER TABLE IF EXISTS ONLY public.future_versions DROP CONSTRAINT IF EXISTS future_versions_pkey;
+ALTER TABLE IF EXISTS ONLY public.destinations DROP CONSTRAINT IF EXISTS destinations_pkey;
 ALTER TABLE IF EXISTS ONLY public.ar_internal_metadata DROP CONSTRAINT IF EXISTS ar_internal_metadata_pkey;
 DROP TABLE IF EXISTS public.schema_migrations;
+DROP TABLE IF EXISTS public.properties;
 DROP TABLE IF EXISTS public.planning_sessions;
 DROP TABLE IF EXISTS public.jobs;
 DROP TABLE IF EXISTS public.future_versions;
+DROP TABLE IF EXISTS public.destinations;
 DROP TABLE IF EXISTS public.ar_internal_metadata;
 DROP EXTENSION IF EXISTS postgis_topology;
 DROP EXTENSION IF EXISTS postgis_tiger_geocoder;
@@ -145,6 +156,25 @@ CREATE TABLE public.ar_internal_metadata (
 
 
 --
+-- Name: destinations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.destinations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    city_code character varying NOT NULL,
+    name character varying NOT NULL,
+    country character varying DEFAULT 'RU'::character varying NOT NULL,
+    lat numeric(9,6) NOT NULL,
+    lon numeric(9,6) NOT NULL,
+    source character varying NOT NULL,
+    source_slug character varying,
+    centre_source character varying DEFAULT 'property_centroid'::character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: future_versions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -187,6 +217,34 @@ CREATE TABLE public.planning_sessions (
 
 
 --
+-- Name: properties; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.properties (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    catalogue_id character varying NOT NULL,
+    source character varying NOT NULL,
+    destination_id uuid NOT NULL,
+    city_code character varying NOT NULL,
+    name character varying NOT NULL,
+    lat numeric(9,6) NOT NULL,
+    lon numeric(9,6) NOT NULL,
+    address character varying,
+    rating numeric(3,1),
+    rating_scale integer,
+    review_count integer,
+    price_level_minor integer,
+    price_currency character varying(3),
+    price_level_text character varying,
+    photos jsonb DEFAULT '[]'::jsonb NOT NULL,
+    source_url character varying NOT NULL,
+    harvested_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -201,6 +259,14 @@ CREATE TABLE public.schema_migrations (
 
 ALTER TABLE ONLY public.ar_internal_metadata
     ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
+-- Name: destinations destinations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.destinations
+    ADD CONSTRAINT destinations_pkey PRIMARY KEY (id);
 
 
 --
@@ -228,11 +294,33 @@ ALTER TABLE ONLY public.planning_sessions
 
 
 --
+-- Name: properties properties_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.properties
+    ADD CONSTRAINT properties_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: index_destinations_on_city_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_destinations_on_city_code ON public.destinations USING btree (city_code);
+
+
+--
+-- Name: index_destinations_on_point; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_destinations_on_point ON public.destinations USING gist (((public.st_setsrid(public.st_makepoint((lon)::double precision, (lat)::double precision), 4326))::public.geography));
 
 
 --
@@ -257,10 +345,48 @@ CREATE INDEX index_jobs_on_status ON public.jobs USING btree (status);
 
 
 --
+-- Name: index_properties_on_catalogue_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_properties_on_catalogue_id ON public.properties USING btree (catalogue_id);
+
+
+--
+-- Name: index_properties_on_city_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_properties_on_city_code ON public.properties USING btree (city_code);
+
+
+--
+-- Name: index_properties_on_destination_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_properties_on_destination_id ON public.properties USING btree (destination_id);
+
+
+--
+-- Name: index_properties_on_point; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_properties_on_point ON public.properties USING gist (((public.st_setsrid(public.st_makepoint((lon)::double precision, (lat)::double precision), 4326))::public.geography));
+
+
+--
+-- Name: properties fk_rails_26a568e578; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.properties
+    ADD CONSTRAINT fk_rails_26a568e578 FOREIGN KEY (destination_id) REFERENCES public.destinations(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260718090000'),
 ('20260702090000');
+

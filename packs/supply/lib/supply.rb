@@ -1,6 +1,9 @@
 require "date"
 require "time"
 require_relative "../../shared/lib/elsewhere/values"
+require_relative "supply/http"
+require_relative "supply/page_cache"
+require_relative "supply/harvest"
 
 module Supply
   def self.adapter
