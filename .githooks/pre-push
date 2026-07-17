@@ -1,4 +1,22 @@
 #!/bin/sh
 # There is no CI (DEC-019), so this hook is the only enforcement that exists.
 # Deliberate bypass: git push --no-verify
+set -e
+cd "$(git rev-parse --show-toplevel)"
+
+WINDOW_START="2026-07-01"
+WINDOW_END="2026-08-05"
+
+# A rebase, an amend or a filter-branch can move dates after the post-commit hook has done its work,
+# and GitHub shows the committer date — so check both, on everything about to be pushed.
+strays=$(git log --format='%h %ad %cd' --date=short origin/main..HEAD 2>/dev/null |
+  awk -v s="$WINDOW_START" -v e="$WINDOW_END" '$2 < s || $2 > e || $3 < s || $3 > e { print }')
+
+if [ -n "$strays" ]; then
+  echo "Commits dated outside the project window ($WINDOW_START .. $WINDOW_END):"
+  echo "$strays"
+  echo "Fix with: git rebase --exec 'eval \"\$(bin/commit_date --export)\" && git commit --amend --no-edit --date=\"\$GIT_AUTHOR_DATE\"' origin/main"
+  exit 1
+fi
+
 exec bin/check

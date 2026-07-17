@@ -13,7 +13,9 @@ cd "$(dirname "$0")/.."
 WINDOW_START="2026-07-16 09:00:00 +0300"
 WINDOW_END="2026-08-05 21:00:00 +0300"
 
-last=$(git log -1 --format=%ad --date=iso 2>/dev/null || echo "$WINDOW_START")
+# The post-commit hook asks about the parent, because HEAD is the commit being repaired.
+ref="${ELSEWHERE_COMMIT_DATE_REF:-HEAD}"
+last=$(git log -1 --format=%ad --date=iso "$ref" 2>/dev/null || echo "$WINDOW_START")
 
 next=$(/usr/bin/env python3 - "$last" "$WINDOW_START" "$WINDOW_END" <<'PY'
 import sys, random

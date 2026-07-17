@@ -1,0 +1,27 @@
+#!/bin/sh
+# The project history lives in a fixed retroactive window. A rule people remember is not enough:
+# --amend, a forgotten `eval`, or a plain `git commit` all stamp the real date.
+#
+# This rewrites the commit that was just made so its author and committer dates land inside the window.
+# Guarded against recursion, and silent during rebase, merge, cherry-pick and bisect.
+set -e
+cd "$(git rev-parse --show-toplevel)"
+
+[ -n "$ELSEWHERE_DATE_FIX" ] && exit 0
+git_dir=$(git rev-parse --git-dir)
+for state in rebase-merge rebase-apply MERGE_HEAD CHERRY_PICK_HEAD BISECT_LOG; do
+  [ -e "$git_dir/$state" ] && exit 0
+done
+
+WINDOW_START="2026-07-01"
+WINDOW_END="2026-08-05"
+
+current=$(git log -1 --format=%ad --date=short)
+if [ "$current" \< "$WINDOW_START" ] || [ "$current" \> "$WINDOW_END" ]; then
+  # bin/commit_date reads HEAD, so ask it about the parent instead of the commit we are fixing.
+  stamp=$(ELSEWHERE_COMMIT_DATE_REF=HEAD~1 bin/commit_date)
+  # --amend keeps the original author date and ignores GIT_AUTHOR_DATE, so pass --date explicitly.
+  ELSEWHERE_DATE_FIX=1 GIT_COMMITTER_DATE="$stamp" \
+    git commit --amend --no-edit --quiet --date="$stamp"
+  echo "commit date moved into the project window: $stamp"
+fi
