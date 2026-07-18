@@ -5,6 +5,7 @@ require_relative "supply/http"
 require_relative "supply/page_cache"
 require_relative "supply/harvest"
 require_relative "supply/corpus"
+require_relative "supply/osm"
 
 module Supply
   def self.adapter

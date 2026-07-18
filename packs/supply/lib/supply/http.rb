@@ -36,6 +36,13 @@ module Supply
       request(:get, url, headers: headers, timeout: timeout, min_interval: min_interval)
     end
 
+    # Form-encoded, for services whose API predates JSON bodies — Overpass takes `data=<query>`.
+    def post_form(url, fields, headers: {}, timeout: 60, min_interval: 1.0)
+      body = URI.encode_www_form(fields)
+      request(:post, url, headers: headers.merge("Content-Type" => "application/x-www-form-urlencoded"),
+                          body: body, timeout: timeout, min_interval: min_interval)
+    end
+
     def post_json(url, payload, headers: {}, timeout: 60, min_interval: 0.2)
       request(:post, url, headers: headers.merge("Content-Type" => "application/json"),
                           body: JSON.generate(payload), timeout: timeout, min_interval: min_interval)

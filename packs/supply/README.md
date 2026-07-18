@@ -99,8 +99,56 @@ it is `NULL` and `price_level_note` says why — the Sochi listing really does p
 *"от 1 400 000 000 руб. средняя цена за номер"*, and anchoring A-7's modeled rate on it would poison every price
 built from it. Absence with a reason, never silent absence. Five of 408 properties have no observed base.
 
+## OSM extract into PostGIS (A-3)
+
+**One command, repeatable:**
+
+```sh
+bin/rails runner 'puts Supply::Osm.import!(log: ->(l) { puts l })'
+bin/rails runner 'puts Supply::Osm.import!(city_codes: %w[AER], layers: %w[road]).to_s'   # one slice
+```
+
+Re-running is safe and produces the same data: each `(city, layer)` is **replaced** as a unit, so a feature OSM
+has since deleted disappears here too. Every Overpass answer is on disk before it is parsed, so a second run
+sends nothing.
+
+**Bounded by the properties we actually harvested**, never by a region. The bbox is the min/max of a city's own
+property coordinates plus a per-layer margin — 4 km for POIs and roads, 25 km for the place node, 60 km for
+aerodromes and coastline, because an airport is not inside a city bbox and a coastline is not a point.
+
+| layer | selectors | `out` | what it is for |
+|---|---|---|---|
+| `place` | `node[place=city\|town]` | `body` | the real city centre — replaces A-1's property centroid |
+| `aerodrome` | `nwr[aeroway=aerodrome]` | `center tags` | airport distance, transfer difficulty |
+| `poi` | `nwr[amenity\|shop\|tourism\|leisure]` | `center tags` | POI and restaurant density |
+| `road` | `way[highway=motorway\|trunk\|primary\|secondary]` | `geom tags` | road class and proximity, walkability |
+| `coastline` | `way[natural=coastline]` | `geom tags` | sea distance, kept so ohsome's answer is checkable |
+
+`out center` collapses a POI to a single coordinate. Density counts do not need a building outline, and asking
+for one turns 13 MB into hundreds. Roads are the one layer fetched with real geometry, because "distance to the
+nearest major road" is the entire question.
+
+### Why Overpass, and why that is not "the OSM main API"
+
+The rule is not to read from the **editing** API — whose own policy says it is *"not for read-only purposes or
+projects"*. Overpass is the read service, and what we ask of it is what a regional extract would have given us:
+one bbox per corpus city, filtered to five tag sets, fetched once, kept on disk. Geofabrik's smallest Russian
+unit is a federal district — hundreds of megabytes of PBF, with no reader for it in this Gemfile — which is
+exactly the whole-country time sink A-3 rules out.
+
+Overpass runs **two slots per client** and answers `429` when both are busy, publishing when the next one frees.
+The importer waits for it. That is the documented way to use the service, and it is a different thing from the
+harvest, where a `429` comes from bot protection and means stop.
+
+**Nothing here runs at request time.** A-4 precomputes from these tables; the API never waits on OSM.
+
 ## Geo
 
 `lat`/`lon` are plain numerics; PostGIS is reached through a **GIST expression index** on
 `ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography`. A query that repeats that expression verbatim uses the
 index. There is no geography column to keep in sync, and no postgis adapter gem to add.
+
+`osm_features.geom` is a real `geometry(Geometry, 4326)` column with its own GIST index — there the geometry is
+the data, not a derivative of two numerics. It has deliberately **no ActiveRecord model**: without the postgis
+adapter gem a model would announce "unknown OID" on every boot, and nothing needs one — the import writes it in
+bulk and A-4 reads it with PostGIS functions.

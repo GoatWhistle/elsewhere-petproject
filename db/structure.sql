@@ -14,6 +14,9 @@ DROP INDEX IF EXISTS public.index_properties_on_point;
 DROP INDEX IF EXISTS public.index_properties_on_destination_id;
 DROP INDEX IF EXISTS public.index_properties_on_city_code;
 DROP INDEX IF EXISTS public.index_properties_on_catalogue_id;
+DROP INDEX IF EXISTS public.index_osm_features_on_identity;
+DROP INDEX IF EXISTS public.index_osm_features_on_geom;
+DROP INDEX IF EXISTS public.index_osm_features_on_city_and_layer;
 DROP INDEX IF EXISTS public.index_jobs_on_status;
 DROP INDEX IF EXISTS public.index_future_versions_on_session_id;
 DROP INDEX IF EXISTS public.index_future_versions_on_lineage_id_and_version;
@@ -23,13 +26,17 @@ DROP INDEX IF EXISTS public.index_destinations_on_city_code;
 ALTER TABLE IF EXISTS ONLY public.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
 ALTER TABLE IF EXISTS ONLY public.properties DROP CONSTRAINT IF EXISTS properties_pkey;
 ALTER TABLE IF EXISTS ONLY public.planning_sessions DROP CONSTRAINT IF EXISTS planning_sessions_pkey;
+ALTER TABLE IF EXISTS ONLY public.osm_features DROP CONSTRAINT IF EXISTS osm_features_pkey;
 ALTER TABLE IF EXISTS ONLY public.jobs DROP CONSTRAINT IF EXISTS jobs_pkey;
 ALTER TABLE IF EXISTS ONLY public.future_versions DROP CONSTRAINT IF EXISTS future_versions_pkey;
 ALTER TABLE IF EXISTS ONLY public.destinations DROP CONSTRAINT IF EXISTS destinations_pkey;
 ALTER TABLE IF EXISTS ONLY public.ar_internal_metadata DROP CONSTRAINT IF EXISTS ar_internal_metadata_pkey;
+ALTER TABLE IF EXISTS public.osm_features ALTER COLUMN id DROP DEFAULT;
 DROP TABLE IF EXISTS public.schema_migrations;
 DROP TABLE IF EXISTS public.properties;
 DROP TABLE IF EXISTS public.planning_sessions;
+DROP SEQUENCE IF EXISTS public.osm_features_id_seq;
+DROP TABLE IF EXISTS public.osm_features;
 DROP TABLE IF EXISTS public.jobs;
 DROP TABLE IF EXISTS public.future_versions;
 DROP TABLE IF EXISTS public.destinations;
@@ -207,6 +214,41 @@ CREATE TABLE public.jobs (
 
 
 --
+-- Name: osm_features; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.osm_features (
+    id bigint NOT NULL,
+    city_code character varying NOT NULL,
+    layer character varying NOT NULL,
+    osm_type character varying NOT NULL,
+    osm_id bigint NOT NULL,
+    tags jsonb DEFAULT '{}'::jsonb NOT NULL,
+    imported_at timestamp(6) without time zone NOT NULL,
+    geom public.geometry(Geometry,4326) NOT NULL
+);
+
+
+--
+-- Name: osm_features_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.osm_features_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: osm_features_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.osm_features_id_seq OWNED BY public.osm_features.id;
+
+
+--
 -- Name: planning_sessions; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -257,6 +299,13 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: osm_features id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.osm_features ALTER COLUMN id SET DEFAULT nextval('public.osm_features_id_seq'::regclass);
+
+
+--
 -- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -286,6 +335,14 @@ ALTER TABLE ONLY public.future_versions
 
 ALTER TABLE ONLY public.jobs
     ADD CONSTRAINT jobs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: osm_features osm_features_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.osm_features
+    ADD CONSTRAINT osm_features_pkey PRIMARY KEY (id);
 
 
 --
@@ -355,6 +412,27 @@ CREATE INDEX index_jobs_on_status ON public.jobs USING btree (status);
 
 
 --
+-- Name: index_osm_features_on_city_and_layer; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_osm_features_on_city_and_layer ON public.osm_features USING btree (city_code, layer);
+
+
+--
+-- Name: index_osm_features_on_geom; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_osm_features_on_geom ON public.osm_features USING gist (geom);
+
+
+--
+-- Name: index_osm_features_on_identity; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_osm_features_on_identity ON public.osm_features USING btree (city_code, layer, osm_type, osm_id);
+
+
+--
 -- Name: index_properties_on_catalogue_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -397,6 +475,7 @@ ALTER TABLE ONLY public.properties
 SET search_path TO public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260720090000'),
 ('20260719100000'),
 ('20260719090000'),
 ('20260718090000'),
