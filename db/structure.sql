@@ -9,7 +9,10 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+ALTER TABLE IF EXISTS ONLY public.property_geo_features DROP CONSTRAINT IF EXISTS fk_rails_587ecd987f;
 ALTER TABLE IF EXISTS ONLY public.properties DROP CONSTRAINT IF EXISTS fk_rails_26a568e578;
+DROP INDEX IF EXISTS public.index_property_geo_features_on_property_id;
+DROP INDEX IF EXISTS public.index_property_geo_features_on_city_code;
 DROP INDEX IF EXISTS public.index_properties_on_point;
 DROP INDEX IF EXISTS public.index_properties_on_destination_id;
 DROP INDEX IF EXISTS public.index_properties_on_city_code;
@@ -24,6 +27,7 @@ DROP INDEX IF EXISTS public.index_destinations_on_point;
 DROP INDEX IF EXISTS public.index_destinations_on_geography_type;
 DROP INDEX IF EXISTS public.index_destinations_on_city_code;
 ALTER TABLE IF EXISTS ONLY public.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
+ALTER TABLE IF EXISTS ONLY public.property_geo_features DROP CONSTRAINT IF EXISTS property_geo_features_pkey;
 ALTER TABLE IF EXISTS ONLY public.properties DROP CONSTRAINT IF EXISTS properties_pkey;
 ALTER TABLE IF EXISTS ONLY public.planning_sessions DROP CONSTRAINT IF EXISTS planning_sessions_pkey;
 ALTER TABLE IF EXISTS ONLY public.osm_features DROP CONSTRAINT IF EXISTS osm_features_pkey;
@@ -33,6 +37,7 @@ ALTER TABLE IF EXISTS ONLY public.destinations DROP CONSTRAINT IF EXISTS destina
 ALTER TABLE IF EXISTS ONLY public.ar_internal_metadata DROP CONSTRAINT IF EXISTS ar_internal_metadata_pkey;
 ALTER TABLE IF EXISTS public.osm_features ALTER COLUMN id DROP DEFAULT;
 DROP TABLE IF EXISTS public.schema_migrations;
+DROP TABLE IF EXISTS public.property_geo_features;
 DROP TABLE IF EXISTS public.properties;
 DROP TABLE IF EXISTS public.planning_sessions;
 DROP SEQUENCE IF EXISTS public.osm_features_id_seq;
@@ -290,6 +295,33 @@ CREATE TABLE public.properties (
 
 
 --
+-- Name: property_geo_features; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.property_geo_features (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    property_id uuid NOT NULL,
+    city_code character varying NOT NULL,
+    distance_to_sea_m integer,
+    distance_to_centre_m integer,
+    poi_count_500m integer,
+    restaurant_count_500m integer,
+    poi_per_km2 numeric(10,2),
+    poi_density numeric(4,3),
+    walk_network_m_500m integer,
+    nearest_major_road_m integer,
+    road_class character varying,
+    airport_distance_m integer,
+    airport_name character varying,
+    airport_transfer_min integer,
+    unassessed jsonb DEFAULT '{}'::jsonb NOT NULL,
+    computed_at timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -359,6 +391,14 @@ ALTER TABLE ONLY public.planning_sessions
 
 ALTER TABLE ONLY public.properties
     ADD CONSTRAINT properties_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: property_geo_features property_geo_features_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.property_geo_features
+    ADD CONSTRAINT property_geo_features_pkey PRIMARY KEY (id);
 
 
 --
@@ -461,11 +501,33 @@ CREATE INDEX index_properties_on_point ON public.properties USING gist (((public
 
 
 --
+-- Name: index_property_geo_features_on_city_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_property_geo_features_on_city_code ON public.property_geo_features USING btree (city_code);
+
+
+--
+-- Name: index_property_geo_features_on_property_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_property_geo_features_on_property_id ON public.property_geo_features USING btree (property_id);
+
+
+--
 -- Name: properties fk_rails_26a568e578; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.properties
     ADD CONSTRAINT fk_rails_26a568e578 FOREIGN KEY (destination_id) REFERENCES public.destinations(id);
+
+
+--
+-- Name: property_geo_features fk_rails_587ecd987f; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.property_geo_features
+    ADD CONSTRAINT fk_rails_587ecd987f FOREIGN KEY (property_id) REFERENCES public.properties(id);
 
 
 --
@@ -475,6 +537,7 @@ ALTER TABLE ONLY public.properties
 SET search_path TO public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260721090000'),
 ('20260720090000'),
 ('20260719100000'),
 ('20260719090000'),

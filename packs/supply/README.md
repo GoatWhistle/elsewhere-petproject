@@ -142,7 +142,65 @@ harvest, where a `429` comes from bot protection and means stop.
 
 **Nothing here runs at request time.** A-4 precomputes from these tables; the API never waits on OSM.
 
-## Geo
+## Geo features per property (A-4)
+
+```sh
+bin/rails runner 'puts Supply::GeoFeatures.compute!(log: ->(l) { puts l }).to_s'
+bin/rails runner 'p Supply::Geo.features(property_id: "101hotels:5716")'
+```
+
+Precomputed, never per request. A generation scores 24 candidates; putting PostGIS on that path would make
+every Future wait on geometry it could have known in advance. One query per city, not one per property — the
+whole corpus takes about **six minutes** once, against 660 000 imported OSM features.
+
+| field | how |
+|---|---|
+| `distance_to_sea_m` | nearest imported `coastline` way, on the ellipsoid |
+| `distance_to_centre_m` | to the destination's OSM place node |
+| `poi_count_500m`, `poi_per_km2`, `poi_density` | POIs within 500 m |
+| `restaurant_count_500m` | the subset you eat in (`restaurant`, `cafe`, `bar`, `fast_food`, `pub`, `bakery`, …) |
+| `walk_network_m_500m` | walkable metres inside 500 m, whole ways measured whole and only crossing ones clipped |
+| `nearest_major_road_m`, `road_class` | nearest `motorway\|trunk\|primary\|secondary` way and its class |
+| `airport_distance_m`, `airport_name` | nearest aerodrome, preferring one with an IATA code |
+| `airport_transfer_min` | OpenRouteService driving matrix — **absent without a key** |
+
+`poi_density` is `poi_per_km2 / (poi_per_km2 + 200)` — half-saturation, not a capped ratio. The capped version
+was the first attempt and the real corpus killed it: against a 300/km² reference **148 of 408 properties pinned
+at exactly 1.0**, so a quiet block of Kazan and the densest corner of Nevsky Prospekt scored the same. The curve
+is monotone over the whole observed range (0 to 2 028 POI/km²) and the corpus now spreads 0.0 · 0.27 · **0.48**
+· 0.67 · 0.91 across min, p25, median, p75, max.
+
+K is **fixed**, never "the median of the current corpus": a denominator that moves as the corpus grows would
+silently rescore every Future ever generated. `poi_per_km2` is published raw alongside it, so nobody has to
+trust the curve.
+
+**`unassessed` carries a reason per field.** "No coastline within this city's extract" and "we did not look"
+are different facts and stay different; nothing here is filled in with a neutral value.
+
+### The two shortcuts A-4 suggested, and what actually happened
+
+**ohsome for coastline distance** — the public instance answers **403 on `/elements/geometry`** while
+`/metadata` and `/elements/count` answer 200, so the endpoint that would have returned the geometry is not
+available to us. It also turned out not to be needed: Overpass returns coastline ways as finished LINESTRINGs,
+so there is nothing to "assemble by hand", and `ST_Distance` on the imported geometry is exact and costs no
+network. ohsome is kept for what it can still do — an **independent check**:
+
+```sh
+bin/rails runner 'p Supply::GeoFeatures.verify_sea_distance("101hotels:5716")'
+```
+
+If the nearest coastline is D metres away, a square of half-width just under D/√2 must contain no coastline and
+one of half-width 1.2·D must contain some. Two bounds, one independent source, no geometry endpoint required.
+
+Run across the range, it agrees: **43 m**, **869 m** and **5 990 m** each give 0 coastline ways in the smaller
+box and 1, 1 and 32 in the larger.
+
+**OpenRouteService for walkability and transfer** — needs `ORS_API_KEY` in `.env`, which this build does not
+have. The adapter is written and wired; without the key `airport_transfer_min` is `NULL` and `unassessed` says
+`ORS_API_KEY is not set`. Walkability meanwhile has a local answer that does not need the key at all —
+`walk_network_m_500m` from the imported walk network — so the only thing actually missing is drive time.
+
+## Geo storage
 
 `lat`/`lon` are plain numerics; PostGIS is reached through a **GIST expression index** on
 `ST_SetSRID(ST_MakePoint(lon, lat), 4326)::geography`. A query that repeats that expression verbatim uses the

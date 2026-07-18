@@ -6,6 +6,9 @@ require_relative "supply/page_cache"
 require_relative "supply/harvest"
 require_relative "supply/corpus"
 require_relative "supply/osm"
+require_relative "supply/ohsome"
+require_relative "supply/ors"
+require_relative "supply/geo_features"
 
 module Supply
   def self.adapter
@@ -76,6 +79,29 @@ module Supply
       def destination(city_code:) = FixtureData.destinations.find { |d| d.city_code == city_code }
       def properties(city_code:, limit: 20) = FixtureData.properties.select { |p| p.city_code == city_code }.first(limit)
       def property(id:) = FixtureData.properties.find { |p| p.catalogue_id == id }
+    end
+
+    # Geo is computed from the OSM extract, so it is local data too: `cached`, never `live`.
+    module DatabaseGeo
+      module_function
+
+      def features(property_id:)
+        GeoFeatures.for_property(property_id) ||
+          { "freshness" => "cached",
+            "unassessed" => { "all" => "no geo features computed for #{property_id} — run Supply::GeoFeatures.compute!" } }
+      end
+
+      def features_for_destination(city_code:)
+        GeoFeatures.for_destination(city_code) ||
+          { "freshness" => "cached", "unassessed" => { "all" => "#{city_code} is not in the corpus" } }
+      end
+    end
+
+    module FixtureGeo
+      module_function
+
+      def features(property_id:) = (FixtureData.geo[property_id] || {}).merge("freshness" => "fixture")
+      def features_for_destination(city_code:) = { "airport_distance_m" => 25_000, "freshness" => "fixture" }
     end
 
     module Database
@@ -158,8 +184,10 @@ module Supply
 
   module Geo
     module_function
-    def features(property_id:); (FixtureData.geo[property_id] || {}).merge("freshness" => "fixture"); end
-    def features_for_destination(city_code:); { "airport_distance_m" => 25000, "freshness" => "fixture" }; end
+
+    def source = Backend.current.geo
+    def features(property_id:) = source.features(property_id: property_id)
+    def features_for_destination(city_code:) = source.features_for_destination(city_code: city_code)
   end
 
   module Climate
@@ -177,10 +205,10 @@ module Supply
   module Adapters
     class Fixture
       def catalog; Sources::Fixtures; end
+      def geo; Sources::FixtureGeo; end
+      def climate; Climate; end
       def rates; Rates; end
       def flights; Flights; end
-      def geo; Geo; end
-      def climate; Climate; end
       def reviews; Reviews; end
     end
     # The seam for Ignav, Open-Meteo and the harvested stores. It keeps the captured corpus so a demo stays
@@ -188,6 +216,7 @@ module Supply
     class Live < Fixture
       # The corpus is harvested and stored locally, so it is available in live mode without a provider call.
       def catalog; Sources::Database; end
+      def geo; Sources::DatabaseGeo; end
     end
   end
 

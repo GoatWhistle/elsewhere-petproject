@@ -158,36 +158,78 @@ User-Agent, без повторов, без ротации, без попыто�
 
 | | |
 |---|---|
-| sochi 48 · sankt-peterburg 21 · kazan 18 · kaliningrad 20 | **city** |
-| dombai 21 · arkhyz 21 · krasnaya_polyana 21 · elbrus 20 · sheregesh 20 · kislovodsk 21 | **mountains** |
-| sochi · adler · lazarevskoe · loo · sirius | **warm sea** |
+| sochi 48 · sankt-peterburg 21 · kazan 18 · kaliningrad 20 | **город** |
+| dombai 21 · arkhyz 21 · krasnaya_polyana 21 · elbrus 20 · sheregesh 20 · kislovodsk 21 | **горы** |
+| sochi · adler · lazarevskoe · loo · sirius | **тёплое море** |
 
-- **coordinates on 240/240** — `schema.org/GeoCoordinates`, `itemprop="latitude"/"longitude"`, full precision
-- **rating on 237/240** (`ratingValue` + `reviewCount`, e.g. `9.4 / 10` over 1 878 reviews)
-- **observed price level on 235/240** — `itemprop="priceRange"`, e.g.
-  `content="от 5 200 руб. средняя цена за номер"`, plus `data-price-value="5200" data-price-currency="RUB"`
-- spread: min 900 · p25 3 910 · **median 5 500** · p75 8 100 · max 130 000 ₽
-- stable `data-hotel-id`, street address, and on a property page **375 image URLs** off `s.101hotelscdn.ru`
+- **координаты у 240 из 240** — `schema.org/GeoCoordinates`, `itemprop="latitude"/"longitude"`, полная точность;
+- **рейтинг у 237 из 240** (`ratingValue` и `reviewCount`, например `9.4 / 10` по 1878 отзывам);
+- **наблюдаемый ценовой уровень у 235 из 240** — `itemprop="priceRange"`, например
+  `content="от 5 200 руб. средняя цена за номер"`, плюс `data-price-value="5200" data-price-currency="RUB"`;
+- разброс: минимум 900 · p25 3 910 · **медиана 5 500** · p75 8 100 · максимум 130 000 ₽;
+- устойчивый `data-hotel-id`, почтовый адрес, а на странице объекта **375 URL изображений** с `s.101hotelscdn.ru`.
 
-A property page carries the same microdata as the listing, richer. Both are server-rendered — no XHR, so nothing
-about this harvest touches bot protection.
+Страница объекта несёт ту же микроразметку, что и список, только богаче. Обе отдаются сервером — никакого XHR, так
+что этот сбор нигде не касается защиты от ботов.
 
-### Consequence
+### Следствие
 
-**Assumption [A-012](../00_project/assumptions.md) holds where it was doubted, and only there.** The observed base
-level A-7 needs exists for 98% of the corpus, with a real spread — cheap/expensive is a measurable axis, not a
-guess. The **OSM `tourism=hotel` fallback is not needed**; it stays on the shelf.
+**Допущение [A-012](../00_project/assumptions.md) держится там, где в нём сомневались, и только там.**
+Наблюдаемый базовый уровень, нужный модели цены, существует для 98% корпуса, с настоящим разбросом: дёшево или
+дорого — измеримая ось, а не догадка. **Запасной вариант через OSM `tourism=hotel` не нужен**, он остаётся на полке.
 
-Two things this does **not** buy, and the wording matters:
-- The price is still `priceRange` — a **"from" teaser**, one number per property, no dates. One property page says
-  so in its own text: `"…точную стоимость смотрите на сайте по датам"`. It confirms the 2026-08-27 finding above:
-  **only the base is observed, the seasonality is modeled** ([DEC-029](../00_project/decision_log.md)).
-- Geography coverage is what the site's own city pages give us. `/main/cities/arhyz` and `/main/cities/dombay`
-  are 404; the working slugs are `arkhyz` and `dombai`. The corpus list for A-2 (OQ-B) is decided by which slugs
-  resolve, and that is now checkable in one request each.
+Двух вещей это **не** даёт, и формулировка важна:
 
-Raw HTML, one file per URL, plus the request log: `tmp/spike/harvest/` — gitignored. A second pass re-parses from
-disk and re-requests nothing.
+- Цена по-прежнему `priceRange` — **завлекающее «от»**, одно число на объект, без дат. Одна страница объекта
+  говорит об этом собственным текстом: `«…точную стоимость смотрите на сайте по датам»`. Это подтверждает
+  находку выше: **наблюдаема только база, сезонность смоделирована**
+  ([DEC-029](../00_project/decision_log.md)).
+- Географическое покрытие — то, что дают городские страницы самого сайта. `/main/cities/arhyz` и
+  `/main/cities/dombay` отвечают 404; рабочие слаги — `arkhyz` и `dombai`. Список корпуса (OQ-B) определяется
+  тем, какие слаги разрешаются, и это теперь проверяется одним запросом на каждый.
+
+Сырой HTML, по файлу на URL, плюс журнал запросов: `tmp/spike/harvest/` — в gitignore. Второй проход
+перечитывает с диска и не делает ни одного запроса.
+
+## 2026-07-18 — Что на самом деле разрешают географические поставщики
+
+Записано, потому что ничего из этого нет ни в чьей документации.
+
+**ohsome (`api.ohsome.org/v1`) — короткий путь к береговой линии недоступен.**
+`/metadata` → 200. `/elements/count` → 200, отвечает на `natural=coastline and type:way` по bbox.
+**`/elements/geometry` → 403 Forbidden** (Apache, не ошибка приложения), с опознавательным User-Agent и без него.
+То есть эндпоинт, который вернул бы геометрию берега, для нас закрыт.
+
+Он к тому же оказался не нужен. Ловушка, которую мы обходили — «собирать `natural=coastline` руками из
+выгрузки», — не существует, когда выгрузка приходит из Overpass: он возвращает каждую линию готовым LINESTRING.
+`ST_Distance` по импортированной геометрии точен, не стоит сети и выполняется на импорте.
+
+`/elements/count` оставлен ради **независимой проверки** числа, на котором держится всё измерение доступа к морю:
+если ближайший берег в D метрах, квадрат с полушириной чуть меньше D/√2 не должен содержать берега, а квадрат с
+полушириной 1,2·D должен. Две границы, один внешний источник, без эндпоинта геометрии.
+
+**Overpass (`overpass-api.de`) — два слота, и он сам об этом говорит.**
+`/api/status` сообщает `Rate limit: 2` и печатает, когда освободится следующий слот. Оба неоднократно упирались во
+время импорта из 34 запросов. Два разных сигнала занятости, и ни один не является отказом:
+`429` (оба слота заняты — статусный эндпоинт сообщает время ожидания) и `504` с
+`Dispatcher_Client::request_read_and_idx::timeout — the server is probably too busy`, что временно и проходит при
+повторе через минуту. Ожидание — задокументированный способ пользоваться сервисом. Это **не** то же самое, что
+429 при сборе каталога, который приходит от защиты от ботов и означает «стоп»; смешение этих двух случаев
+заставило бы нас либо долбить общественный сервер, либо бросать импорт, который всего лишь стоял в очереди.
+
+Размеры, измеренные, а не угаданные, для bbox центра Санкт-Петербурга: POI с `out center tags` —
+**12,9 МБ и 43 642 элемента**; тот же запрос с полной геометрией на порядок больше и ни за чем, поскольку подсчёту
+плотности не нужен контур здания. Крупные дороги с `out geom tags`: 2,5 МБ и 2 934 линии.
+
+**OpenRouteService** — `ORS_API_KEY` в этой сборке не задан, поэтому пешая изохрона и время трансфера из
+аэропорта НЕИЗВЕСТНЫ и так и сообщаются. Пешеходность от него не зависит: импортированная пешеходная сеть
+отвечает на «сколько проходимых метров в пределах 500 м» локально. Ключ реально ограждает только время в пути от
+аэропорта.
+
+**PostGIS, для того, кто наткнётся следующим.** `ST_Intersection` возвращает `LINESTRING EMPTY` для короткой
+линии, целиком лежащей *внутри* большого буфера, тогда как `ST_Within` на той же паре возвращает истину. Поэтому
+обрезание линии по радиусу нельзя оставлять одному пересечению: содержащиеся целиком линии измеряются целиком, а
+обрезаются только пересекающие.
 
 ---
 
@@ -196,6 +238,7 @@ disk and re-requests nothing.
 - https://travel.yandex.ru/robots.txt · https://ostrovok.ru/robots.txt · https://tvil.ru/robots.txt
 - https://ignav.com/docs · https://ignav.com/api/openapi.json · https://ignav.com/pricing
 - https://101hotels.com/robots.txt · https://101hotels.com/main/cities/sochi
+- https://api.ohsome.org/v1/metadata · https://overpass-api.de/api/status · https://openrouteservice.org/dev/#/api-docs
 - https://open-meteo.com/en/terms · https://operations.osmfoundation.org/policies/api/ · https://ip-api.com/docs/api:json
 - https://yandex.ru/dev/travel-partners-api/ (+ `doc/ru/hotel-overview`, `doc/ru/booking-overview`)
 - https://support.travelpayouts.com/hc/ru/articles/19677424987026 · https://travelpayouts-data-api.readthedocs.io/
