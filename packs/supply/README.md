@@ -200,6 +200,37 @@ have. The adapter is written and wired; without the key `airport_transfer_min` i
 `ORS_API_KEY is not set`. Walkability meanwhile has a local answer that does not need the key at all —
 `walk_network_m_500m` from the imported walk network — so the only thing actually missing is drive time.
 
+## Climate (A-5)
+
+```sh
+bin/rails runner 'puts Supply::ClimateData.refresh!(log: ->(l) { puts l }).to_s'   # 7 requests, one per city
+bin/rails runner 'p Supply::Climate.normals(city_code: "AER", month: 7)'
+```
+
+Normals are aggregated once from **thirty years of daily history** (`archive-api`) and stored — 84 monthly rows
+for seven destinations. The forecast is fetched on demand. They are different kinds of fact and carry different
+labels: `cached` against `live`.
+
+**Two windows, named separately.** Air is 1996–2025. Sea surface temperature is **2023 onward** — the marine
+archive has nothing before that, verified by probing 2000, 2010, 2016 and 2022, all null. Calling a three-year
+mean and a thirty-year mean both "the normal" would be one word covering two very different claims, so
+`air_years` and `sea_years` are separate fields. Inland destinations get `sea_temp_c: nil` with a reason.
+
+A **rain day is ≥ 1 mm**, stated in the payload as `rain_day_threshold_mm`, because every source picks its own
+threshold and the count means nothing without it.
+
+The numbers land where they should: Sochi July 23.8 °C with the sea at 26.3 °C, Sochi January 5.8 °C and 11.1 °C,
+Sheregesh January **−15.9 °C**, Saint Petersburg July 18.7 °C.
+
+**A forecast is the one answer here that goes stale**, so it is the one cache entry with a maximum age (3 h);
+past it the entry is a miss rather than a stale answer served as current. Everything else — a listing page, a
+decade of daily history, an OSM extract — is cached forever, because it records what the source said and that
+does not go off.
+
+Open-Meteo meters by **data volume**, not request count: thirty years of daily history for one city trips
+"Minutely API request limit exceeded" on its own. The limit is per minute and says so, so the client waits it
+out. Their free tier is **non-commercial only** — fine for this build, a paid dependency the day it is not.
+
 ## Geo storage
 
 `lat`/`lon` are plain numerics; PostGIS is reached through a **GIST expression index** on

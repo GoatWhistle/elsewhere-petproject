@@ -9,6 +9,7 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+ALTER TABLE IF EXISTS ONLY public.destination_climate_normals DROP CONSTRAINT IF EXISTS fk_rails_651984c22b;
 ALTER TABLE IF EXISTS ONLY public.property_geo_features DROP CONSTRAINT IF EXISTS fk_rails_587ecd987f;
 ALTER TABLE IF EXISTS ONLY public.properties DROP CONSTRAINT IF EXISTS fk_rails_26a568e578;
 DROP INDEX IF EXISTS public.index_property_geo_features_on_property_id;
@@ -26,6 +27,8 @@ DROP INDEX IF EXISTS public.index_future_versions_on_lineage_id_and_version;
 DROP INDEX IF EXISTS public.index_destinations_on_point;
 DROP INDEX IF EXISTS public.index_destinations_on_geography_type;
 DROP INDEX IF EXISTS public.index_destinations_on_city_code;
+DROP INDEX IF EXISTS public.index_destination_climate_normals_on_destination_id;
+DROP INDEX IF EXISTS public.index_destination_climate_normals_on_city_code_and_month;
 ALTER TABLE IF EXISTS ONLY public.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
 ALTER TABLE IF EXISTS ONLY public.property_geo_features DROP CONSTRAINT IF EXISTS property_geo_features_pkey;
 ALTER TABLE IF EXISTS ONLY public.properties DROP CONSTRAINT IF EXISTS properties_pkey;
@@ -34,6 +37,7 @@ ALTER TABLE IF EXISTS ONLY public.osm_features DROP CONSTRAINT IF EXISTS osm_fea
 ALTER TABLE IF EXISTS ONLY public.jobs DROP CONSTRAINT IF EXISTS jobs_pkey;
 ALTER TABLE IF EXISTS ONLY public.future_versions DROP CONSTRAINT IF EXISTS future_versions_pkey;
 ALTER TABLE IF EXISTS ONLY public.destinations DROP CONSTRAINT IF EXISTS destinations_pkey;
+ALTER TABLE IF EXISTS ONLY public.destination_climate_normals DROP CONSTRAINT IF EXISTS destination_climate_normals_pkey;
 ALTER TABLE IF EXISTS ONLY public.ar_internal_metadata DROP CONSTRAINT IF EXISTS ar_internal_metadata_pkey;
 ALTER TABLE IF EXISTS public.osm_features ALTER COLUMN id DROP DEFAULT;
 DROP TABLE IF EXISTS public.schema_migrations;
@@ -45,6 +49,7 @@ DROP TABLE IF EXISTS public.osm_features;
 DROP TABLE IF EXISTS public.jobs;
 DROP TABLE IF EXISTS public.future_versions;
 DROP TABLE IF EXISTS public.destinations;
+DROP TABLE IF EXISTS public.destination_climate_normals;
 DROP TABLE IF EXISTS public.ar_internal_metadata;
 DROP EXTENSION IF EXISTS postgis_topology;
 DROP EXTENSION IF EXISTS postgis_tiger_geocoder;
@@ -163,6 +168,33 @@ SET default_table_access_method = heap;
 CREATE TABLE public.ar_internal_metadata (
     key character varying NOT NULL,
     value character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: destination_climate_normals; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.destination_climate_normals (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    destination_id uuid NOT NULL,
+    city_code character varying NOT NULL,
+    month integer NOT NULL,
+    temp_mean_c numeric(4,1),
+    temp_min_c numeric(4,1),
+    temp_max_c numeric(4,1),
+    precipitation_mm numeric(6,1),
+    rain_days numeric(4,1),
+    sea_temp_c numeric(4,1),
+    air_years_from integer,
+    air_years_to integer,
+    sea_years_from integer,
+    sea_years_to integer,
+    source character varying NOT NULL,
+    unassessed jsonb DEFAULT '{}'::jsonb NOT NULL,
+    computed_at timestamp(6) without time zone NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
@@ -346,6 +378,14 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 
 --
+-- Name: destination_climate_normals destination_climate_normals_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.destination_climate_normals
+    ADD CONSTRAINT destination_climate_normals_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: destinations destinations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -407,6 +447,20 @@ ALTER TABLE ONLY public.property_geo_features
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: index_destination_climate_normals_on_city_code_and_month; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_destination_climate_normals_on_city_code_and_month ON public.destination_climate_normals USING btree (city_code, month);
+
+
+--
+-- Name: index_destination_climate_normals_on_destination_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_destination_climate_normals_on_destination_id ON public.destination_climate_normals USING btree (destination_id);
 
 
 --
@@ -531,12 +585,21 @@ ALTER TABLE ONLY public.property_geo_features
 
 
 --
+-- Name: destination_climate_normals fk_rails_651984c22b; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.destination_climate_normals
+    ADD CONSTRAINT fk_rails_651984c22b FOREIGN KEY (destination_id) REFERENCES public.destinations(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260722090000'),
 ('20260721090000'),
 ('20260720090000'),
 ('20260719100000'),

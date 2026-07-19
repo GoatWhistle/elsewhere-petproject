@@ -9,6 +9,8 @@ require_relative "supply/osm"
 require_relative "supply/ohsome"
 require_relative "supply/ors"
 require_relative "supply/geo_features"
+require_relative "supply/open_meteo"
+require_relative "supply/climate_data"
 
 module Supply
   def self.adapter
@@ -94,6 +96,29 @@ module Supply
       def features_for_destination(city_code:)
         GeoFeatures.for_destination(city_code) ||
           { "freshness" => "cached", "unassessed" => { "all" => "#{city_code} is not in the corpus" } }
+      end
+    end
+
+    module DatabaseClimate
+      module_function
+
+      def normals(city_code:, month:)
+        ClimateData.normals(city_code: city_code, month: month) ||
+          { "freshness" => "cached",
+            "unassessed" => { "all" => "no normals computed for #{city_code} — run Supply::ClimateData.refresh!" } }
+      end
+
+      def forecast(city_code:, from:, to:) = ClimateData.forecast(city_code: city_code, from: from, to: to)
+    end
+
+    module FixtureClimate
+      module_function
+
+      def normals(city_code:, month:) = (FixtureData.climate[city_code] || {}).merge("freshness" => "fixture")
+
+      def forecast(city_code:, from:, to:)
+        [{ "date" => from.to_s, "temp_mean_c" => FixtureData.climate.dig(city_code, "temp_mean_c"),
+           "freshness" => "fixture" }]
       end
     end
 
@@ -192,8 +217,10 @@ module Supply
 
   module Climate
     module_function
-    def normals(city_code:, month:); (FixtureData.climate[city_code] || {}).merge("freshness" => "fixture"); end
-    def forecast(city_code:, from:, to:); [{ "date" => from.to_s, "temp_mean_c" => FixtureData.climate.dig(city_code, "temp_mean_c"), "freshness" => "fixture" }]; end
+
+    def source = Backend.current.climate
+    def normals(city_code:, month:) = source.normals(city_code: city_code, month: month)
+    def forecast(city_code:, from:, to:) = source.forecast(city_code: city_code, from: from, to: to)
   end
 
   module Reviews
@@ -206,7 +233,7 @@ module Supply
     class Fixture
       def catalog; Sources::Fixtures; end
       def geo; Sources::FixtureGeo; end
-      def climate; Climate; end
+      def climate; Sources::FixtureClimate; end
       def rates; Rates; end
       def flights; Flights; end
       def reviews; Reviews; end
@@ -217,6 +244,7 @@ module Supply
       # The corpus is harvested and stored locally, so it is available in live mode without a provider call.
       def catalog; Sources::Database; end
       def geo; Sources::DatabaseGeo; end
+      def climate; Sources::DatabaseClimate; end
     end
   end
 

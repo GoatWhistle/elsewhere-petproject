@@ -39,14 +39,23 @@ module Supply
       Entry.new(body: body, status: status, fetched_at: fetched_at, url: url, source: :network)
     end
 
-    # Cached entries are returned untouched; only a miss reaches the block. `refresh: true` is the escape hatch
-    # for "the source changed", and it is a deliberate act, never a default.
-    def fetch(url, refresh: false)
+    # Only a miss reaches the block; `refresh: true` is the deliberate escape hatch for a changed source.
+    # `max_age` covers the one answer that expires on its own, a weather forecast. Everything else is cached
+    # forever: it is a record of what the source said, and that does not go off.
+    def fetch(url, refresh: false, max_age: nil)
       unless refresh
         hit = read(url)
-        return hit if hit
+        return hit if hit && !expired?(hit, max_age)
       end
       yield
+    end
+
+    def expired?(entry, max_age)
+      return false if max_age.nil? || entry.fetched_at.nil?
+
+      Time.now.utc - Time.parse(entry.fetched_at) > max_age
+    rescue ArgumentError
+      true
     end
 
     def path_for(url, extension)
