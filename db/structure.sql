@@ -24,6 +24,7 @@ DROP INDEX IF EXISTS public.index_osm_features_on_city_and_layer;
 DROP INDEX IF EXISTS public.index_jobs_on_status;
 DROP INDEX IF EXISTS public.index_future_versions_on_session_id;
 DROP INDEX IF EXISTS public.index_future_versions_on_lineage_id_and_version;
+DROP INDEX IF EXISTS public.index_flight_fares_on_query;
 DROP INDEX IF EXISTS public.index_destinations_on_point;
 DROP INDEX IF EXISTS public.index_destinations_on_geography_type;
 DROP INDEX IF EXISTS public.index_destinations_on_city_code;
@@ -36,6 +37,7 @@ ALTER TABLE IF EXISTS ONLY public.planning_sessions DROP CONSTRAINT IF EXISTS pl
 ALTER TABLE IF EXISTS ONLY public.osm_features DROP CONSTRAINT IF EXISTS osm_features_pkey;
 ALTER TABLE IF EXISTS ONLY public.jobs DROP CONSTRAINT IF EXISTS jobs_pkey;
 ALTER TABLE IF EXISTS ONLY public.future_versions DROP CONSTRAINT IF EXISTS future_versions_pkey;
+ALTER TABLE IF EXISTS ONLY public.flight_fare_snapshots DROP CONSTRAINT IF EXISTS flight_fare_snapshots_pkey;
 ALTER TABLE IF EXISTS ONLY public.destinations DROP CONSTRAINT IF EXISTS destinations_pkey;
 ALTER TABLE IF EXISTS ONLY public.destination_climate_normals DROP CONSTRAINT IF EXISTS destination_climate_normals_pkey;
 ALTER TABLE IF EXISTS ONLY public.ar_internal_metadata DROP CONSTRAINT IF EXISTS ar_internal_metadata_pkey;
@@ -48,6 +50,7 @@ DROP SEQUENCE IF EXISTS public.osm_features_id_seq;
 DROP TABLE IF EXISTS public.osm_features;
 DROP TABLE IF EXISTS public.jobs;
 DROP TABLE IF EXISTS public.future_versions;
+DROP TABLE IF EXISTS public.flight_fare_snapshots;
 DROP TABLE IF EXISTS public.destinations;
 DROP TABLE IF EXISTS public.destination_climate_normals;
 DROP TABLE IF EXISTS public.ar_internal_metadata;
@@ -217,6 +220,36 @@ CREATE TABLE public.destinations (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     geography_type character varying
+);
+
+
+--
+-- Name: flight_fare_snapshots; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.flight_fare_snapshots (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    origin character varying NOT NULL,
+    destination character varying NOT NULL,
+    depart_on date NOT NULL,
+    return_on date,
+    adults integer DEFAULT 1 NOT NULL,
+    cabin_class character varying DEFAULT 'economy'::character varying NOT NULL,
+    amount_minor bigint,
+    currency character varying(3),
+    price_status character varying,
+    carrier character varying,
+    duration_min integer,
+    stops integer,
+    booking_url character varying,
+    provider_itinerary_id character varying,
+    itineraries integer,
+    direct_service boolean,
+    unassessed jsonb DEFAULT '{}'::jsonb NOT NULL,
+    source character varying DEFAULT 'ignav'::character varying NOT NULL,
+    as_of timestamp(6) without time zone NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
 );
 
 
@@ -394,6 +427,14 @@ ALTER TABLE ONLY public.destinations
 
 
 --
+-- Name: flight_fare_snapshots flight_fare_snapshots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.flight_fare_snapshots
+    ADD CONSTRAINT flight_fare_snapshots_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: future_versions future_versions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -482,6 +523,13 @@ CREATE INDEX index_destinations_on_geography_type ON public.destinations USING b
 --
 
 CREATE INDEX index_destinations_on_point ON public.destinations USING gist (((public.st_setsrid(public.st_makepoint((lon)::double precision, (lat)::double precision), 4326))::public.geography));
+
+
+--
+-- Name: index_flight_fares_on_query; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_flight_fares_on_query ON public.flight_fare_snapshots USING btree (origin, destination, depart_on, return_on, adults, cabin_class);
 
 
 --
@@ -599,6 +647,7 @@ ALTER TABLE ONLY public.destination_climate_normals
 SET search_path TO public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260723090000'),
 ('20260722090000'),
 ('20260721090000'),
 ('20260720090000'),

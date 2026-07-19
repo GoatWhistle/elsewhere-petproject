@@ -11,6 +11,9 @@ require_relative "supply/ors"
 require_relative "supply/geo_features"
 require_relative "supply/open_meteo"
 require_relative "supply/climate_data"
+require_relative "supply/ignav"
+require_relative "supply/flights_data"
+require_relative "supply/flight_fixtures"
 
 module Supply
   def self.adapter
@@ -198,12 +201,17 @@ module Supply
 
   module Flights
     module_function
-    def price(origin:, destination:, depart_on:, return_on:, adults:)
-      base = destination == "AER" ? 32000 : (destination == "MRV" ? 25000 : 18000)
-      { "amount" => { "amount_minor" => base * adults.to_i, "currency" => "RUB" }, "as_of" => Time.now.utc.iso8601, "freshness" => "fixture", "carrier" => "Fixture Air", "duration_min" => 180, "booking_url" => "https://example.invalid/flights" }
+
+    def source = Backend.current.flights
+
+    def price(origin:, destination:, depart_on:, return_on: nil, adults: 1)
+      source.price(origin: origin, destination: destination, depart_on: depart_on,
+                   return_on: return_on, adults: adults)
     end
-    def around_dates(origin:, destination:, depart_on:, window_days:)
-      [{ "date" => depart_on.to_s, "amount" => { "amount_minor" => 32000, "currency" => "RUB" }, "as_of" => Time.now.utc.iso8601, "freshness" => "fixture" }]
+
+    def around_dates(origin:, destination:, depart_on:, window_days: 1, adults: 1)
+      source.around_dates(origin: origin, destination: destination, depart_on: depart_on,
+                          window_days: window_days, adults: adults)
     end
   end
 
@@ -235,7 +243,7 @@ module Supply
       def geo; Sources::FixtureGeo; end
       def climate; Sources::FixtureClimate; end
       def rates; Rates; end
-      def flights; Flights; end
+      def flights; FlightFixtures; end
       def reviews; Reviews; end
     end
     # The seam for Ignav, Open-Meteo and the harvested stores. It keeps the captured corpus so a demo stays
@@ -245,6 +253,7 @@ module Supply
       def catalog; Sources::Database; end
       def geo; Sources::DatabaseGeo; end
       def climate; Sources::DatabaseClimate; end
+      def flights; FlightsData; end
     end
   end
 

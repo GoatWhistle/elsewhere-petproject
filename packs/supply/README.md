@@ -200,6 +200,55 @@ have. The adapter is written and wired; without the key `airport_transfer_min` i
 `ORS_API_KEY is not set`. Walkability meanwhile has a local answer that does not need the key at all —
 `walk_network_m_500m` from the imported walk network — so the only thing actually missing is drive time.
 
+## Flights (A-6)
+
+```sh
+bin/rails runner 'p Supply::Flights.price(origin: "MOW", destination: "AER", depart_on: "2026-09-24")'
+SUPPLY_MODE=live bin/rails runner '...'   # needs IGNAV_API_KEY
+```
+
+Real observed fares, in both modes: `live` asks Ignav, `fixture` serves **captured responses from the same
+provider** (assumption A-007). Every fare carries `as_of` — a fare we cannot sell is only honest while its age
+is visible — plus `stops`, `duration_min`, the provider's own `price_status`, and a `coverage` block.
+
+### The A-0 finding was wrong, and this is the correction
+
+A-0 concluded that Ignav returns no direct flight into or out of Russia. That was an artifact of a parameter
+**we** sent: every Russian probe went out with `market: "RU"`. Ignav's `market` selects market-local fares, and
+for RU that set excludes the carriers that actually fly. Drop it and they appear:
+
+| route | with `market: "RU"` | at the default market |
+|---|---|---|
+| VKO→AER | 3 itineraries, **0 nonstop** | 5, **2 nonstop** — UTair 124 $, 230 min |
+| DME→AER | 5 itineraries, **0 nonstop** | 8, **3 nonstop** — Ural Airlines 129 $ |
+| VKO→IST | — | 11, **8 nonstop** — Turkish 283 $, 230 min |
+| DME→IST | — | 10, **2 nonstop** — S7 / Ural 168 $ |
+
+So **[DEC-027](../../docs/00_project/decision_log.md) branch 2 does not fire** and rule 7 stands: exactly one
+number in this product is synthetic, and it is the room rate. `market_ru/` keeps the misleading captures as the
+evidence.
+
+### Two limits that are real
+
+**SVO is thin** — 0 nonstop to Sochi and 0 of 10 to Istanbul, while DME and VKO are fine. So a Moscow origin is
+**expanded across all three airports** and the best taken: with SVO alone the product would price a 17-hour
+connection via Abu Dhabi as the Sochi fare. City codes are rejected for fares outright
+(`origin: "MOW"` → `invalid_airport_code`), so the expansion is one cached airport lookup then three fare
+requests — eight destinations × three origins is the 24-request budget of DEC-028 exactly.
+
+**There is no price calendar.** "Flexible search" is multi-city; a leg carries one `departure_date`. So
+"shift the dates and save X" costs one request per date, and `around_dates` is capped at ±3 days.
+
+### The currency question, which is not Supply's to answer
+
+The default market prices in **USD**, and roubles are only available through `market: "RU"` — the setting that
+hides the real flights. There is no `currency` parameter. So the fare is observed in USD while the room rate is
+modeled in RUB, and `PriceBreakdown.total` needs one currency. **An FX rate is a new number and whether it is
+observed or modeled is a decision for the lead**, not something to pick quietly here.
+
+Fares are cached in `flight_fare_snapshots` keyed by exactly what was asked, because they are the only paid
+dependency in the system.
+
 ## Climate (A-5)
 
 ```sh

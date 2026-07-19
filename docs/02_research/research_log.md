@@ -29,12 +29,12 @@
 
 ## 2026-07-17 — Бесплатные и неограждённые данные, которые мы действительно используем
 
-**Ignav** — flight fares. `POST /fares/one-way`, `POST /fares/round-trip`, flexible search, booking-link
-generation, airport search. Auth `X-Api-Key`; free account, and *"try the playground — no signup required"*.
-Base `https://ignav.com/api`. Pricing tiers and rate limits are not stated in the docs — UNKNOWN.
-No hotel data of any kind. **Amended 2026-08-27 by the A-0 probe below: it returns no direct flight into or
-out of Russia, so for this corpus the fare is modeled, not observed.** What survives is airport search and
-the captured-fixture corpus.
+**Ignav** — авиатарифы. `POST /fares/one-way`, `POST /fares/round-trip`, гибкий поиск, генерация ссылок на
+бронирование, поиск аэропортов. Авторизация через `X-Api-Key`; бесплатный аккаунт, и *«попробуйте песочницу —
+регистрация не нужна»*. База `https://ignav.com/api`. Тарифные планы и ограничения частоты в документации не
+указаны — НЕИЗВЕСТНО. Данных по отелям нет никаких. **Наши маршруты он покрывает** — см. разведку ниже и
+исправление, перевернувшее её первый ответ: если не посылать `market`, появляются Ural, UTair, S7 и Turkish, все
+без пересадок.
 
 **Open-Meteo** — климатические нормы и прогноз. Ключ не нужен. Ограничения бесплатного тарифа, цитата:
 *«менее 10 000 вызовов API в день, 5 000 в час и 600 в минуту»*.
@@ -69,73 +69,72 @@ the captured-fixture corpus.
 
 Общая форма: реальные цены отелей на даты — договорные данные. Открытый ключ их не даёт.
 
-## 2026-08-27 — A-0 probe 1: does Ignav cover our routes? (decisive — no, and worse than "domestic is empty")
+## 2026-07-19 — Разведка: покрывает ли Ignav наши маршруты? **Да — первый ответ здесь был неверным**
 
-Probed live with a real key against `https://ignav.com/api`. Health `{"ok":true}`; the account works; 14 requests spent.
-Machine-readable spec at **`/api/openapi.json`** (`Ignav Public API 1.0.0`) — six endpoints: `GET /health`,
-`GET /airports?q=&limit=`, `POST /fares/search` (1–2 ordered legs), `POST /fares/one-way`, `POST /fares/round-trip`,
-`POST /fares/booking-links`. Auth header `X-Api-Key`.
+> **Исправлено в тот же день.** Исходный вывод — «Ignav не возвращает прямых рейсов в Россию и из неё» — оказался
+> артефактом параметра, который посылали *мы*, а не свойством поставщика. Все российские пробы уходили с
+> `"market": "RU"`. Параметр `market` в Ignav выбирает локальные для рынка тарифы, и для RU это множество
+> исключает перевозчиков, которые реально летают по этим маршрутам. Без него они возвращаются. Ошибочная версия
+> едва не привела в действие второй пункт [DEC-027](../00_project/decision_log.md); он срабатывать не должен.
+> Измерения оставлены ниже, потому что полезная часть — сам способ, каким возникла ошибка.
 
-**City codes are not accepted for fares.** `origin: "MOW"` →
-`{"error":{"type":"invalid_request","code":"invalid_airport_code","message":"origin must be a supported 3-letter IATA code.","field":"origin"}}`
-Airport *search* does resolve `q=MOW` → DME, SVO, VKO and `q=Sochi` → AER, so a city → airport expansion must happen
-on our side, and a Moscow origin is **three** fare requests, not one, unless we pick one airport. Not stated in the
-docs — found by probing.
+### Сравнение, которое всё решило
 
-### The three routes the task asked for, `2026-09-24`, one adult, economy
+Один маршрут, одна дата, один ключ, с разницей в минуты. Отличие только в `market`.
 
-| Route | Itineraries | Cheapest | Reality |
+| Запрос | Маршрутов | Без пересадок | Дешевейший |
 |---|---|---|---|
-| **SVO→AER** (domestic) | 2 | 46 523 ₽ Etihad, **17 h 15 m**, via **AUH** | nonstop 2 h 20 m, ~5–9 000 ₽, many daily |
-| SVO→AER `max_stops:0` | **0** | — | — |
-| DME→AER (domestic) | 7 | 22 489 ₽ FLYONE Armenia via **EVN**, 22 h; also 569 370 ₽ EgyptAir `DME>CAI>AMM>AUH>AER`, 48 h | as above |
-| LED→AER (domestic) | 1 | 31 725 ₽ FLYONE Armenia via **EVN**, 8 h 20 m | nonstop ~2 h 30 m |
-| **SVO→IST** (international from Moscow) | 9 | 40 601 ₽ Gulf Air via **BAH**, 16 h | Turkish flies it **nonstop**, ~3 h |
-| **LHR→BCN** (control) | 9 | **52 £ Vueling, nonstop, 140 min**; BA 102–125 £ | correct |
+| `VKO→AER`, `market: "RU"` | 3 | **0** | 23 493 ₽ FLYONE Armenia через Ереван, 9 ч |
+| `VKO→AER`, без `market` | 5 | **2** | **124 $ UTair, без пересадок, 230 мин** |
+| `DME→AER`, `market: "RU"` | 5 | **0** | 22 489 ₽ FLYONE Armenia через Ереван, 22 ч |
+| `DME→AER`, без `market` | 8 | **3** | **129 $ Ural Airlines, без пересадок** |
+| `VKO→IST`, без `market` | 11 | **8** | 283 $ **Turkish Airlines, без пересадок, 230 мин** |
+| `DME→IST`, без `market` | 10 | **2** | 168 $ **S7 / Ural Airlines, без пересадок, 315 мин** |
 
-Verbatim, the domestic answer:
+`market: "TR"` и `market: "AE"` тоже подавляют беспересадочные; `market: "KZ"` не возвращает ничего. Значение по
+умолчанию — `"US"`, и только оно возвращает настоящих перевозчиков. Параметра **`currency` нет** — `market`
+единственный способ на неё повлиять, из-за чего «RU ради рублей» выглядело очевидным выбором, и именно так и
+произошла ошибка.
 
-```json
-{"origin":"SVO","destination":"AER","departure_date":"2026-09-24",
- "itineraries":[{"price":{"amount":46523.0,"currency":"RUB","status":"verified"},
-   "outbound":{"carrier":"Etihad Airways","duration_minutes":1035,
-     "segments":[{"marketing_carrier_code":"EY","flight_number":"844","departure_airport":"SVO",
-                  "arrival_airport":"AUH","duration_minutes":345,"aircraft":"Boeing 777"},
-                 {"marketing_carrier_code":"EY","flight_number":"857","departure_airport":"AUH",
-                  "arrival_airport":"AER","duration_minutes":245,"aircraft":"Airbus A320"}]},
-   "ignav_id":"8525a9dcdd864f8da388bc8442d5094b"}, … ]}
-```
+### Что является правдой
 
-**The gap is Russia, not "domestic".** One more probe settles which: **IST→AER** (foreign origin, Russian
-destination) returns 8 itineraries and Turkish Airlines is among them — routed `IST>BEG>AER`, **23 h**, when
-Turkish flies IST–AER nonstop in about two hours. So the underlying inventory returns **no direct flight into or
-out of Russia, from any carrier, in any market**. Aeroflot, S7, Pobeda and Ural appear nowhere. What is left is a
-residue of foreign-carrier connections priced 3× to 100× the real fare.
+**Ignav покрывает наши маршруты.** Ural Airlines, UTair, S7 и Turkish появляются без пересадок по правдоподобным
+тарифам. **Второй пункт [DEC-027](../00_project/decision_log.md) не срабатывает**, и правило остаётся прежним:
+ровно одно число в этом продукте синтетическое, и это цена номера.
 
-`"status":"verified"` on every one of them. The number is real; the itinerary is not one a traveller would take.
-**A plausible-looking wrong number is worse than an empty result** — an empty result we would have shown as absent.
+Остаются два настоящих ограничения, и ни одно из них не про Россию:
 
-### Consequence
+- **SVO беден.** `SVO→AER` даёт 0 беспересадочных даже на рынке по умолчанию, `SVO→IST` — 0 из 10. DME и VKO в
+  порядке. Значит, московский вылет надо **разворачивать во все три аэропорта** и брать лучшее среди них: с
+  одним SVO продукт оценил бы семнадцатичасовую стыковку через Абу-Даби как тариф до Сочи.
+- **Коды городов для тарифов не принимаются.** `origin: "MOW"` → `invalid_airport_code`. Поиск *аэропортов*
+  принимает `q=MOW` и возвращает DME, SVO, VKO, так что разворачивание — один кэшируемый запрос, затем три
+  запроса тарифов.
 
-**[DEC-027](../00_project/decision_log.md) branch 2 fires, and wider than it was written.** DEC-027 anticipated
-"Ignav returns no domestic fares". The measurement is stronger: for a Russian corpus reached from a Russian
-origin, *every* route we serve is uncovered — domestic and international alike. So the fare is a **second modeled
-number** for the whole product, not a domestic special case, and the honesty list becomes **two modeled numbers,
-both named**: the room rate and the fare.
+### Следствие, которое ещё никто не решил
 
-Ignav is still worth keeping wired, in three narrow roles, all of them real:
-airport search (`q=Sochi` → AER, correct for Russian airports); the fixture corpus for `Supply::Flights`
-(A-007 wants real captured responses and these are real); and the live path for any future non-Russian corpus,
-where the control route proves it is accurate.
+Рынок по умолчанию считает в **долларах**. Рубли доступны только через `market: "RU"`, то есть через настройку,
+которая прячет настоящие рейсы. Получается, тариф поездки наблюдается в долларах, а цена номера моделируется в
+рублях, тогда как `PriceBreakdown.total` требует одной валюты. **Курс — это новое число, и решение о том,
+наблюдаемое оно или модельное, принимает владелец продукта**, а не Supply молча.
 
-### Still UNKNOWN
+### Остальной API, проверенный
 
-Rate limits and remaining quota — **no** `X-RateLimit-*` or quota header on any response, and none documented.
-The pricing page states 1 000 free requests then $2/1 000; nothing exposes the counter. `POST /fares/booking-links`
-with `{"ignav_id": …}` returns itinerary plus `booking_options` (HTTP 200) — but it rejects `ignav_id` combined
-with `market`/passenger fields (`conflicting_booking_lookup_mode`), so the two lookup modes are exclusive.
+Машиночитаемая спецификация по адресу **`/api/openapi.json`** (`Ignav Public API 1.0.0`): `GET /health`,
+`GET /airports?q=&limit=`, `POST /fares/search` (одно-два упорядоченных плеча), `POST /fares/one-way`,
+`POST /fares/round-trip`, `POST /fares/booking-links`. Заголовок авторизации `X-Api-Key`.
 
-Raw captures (14 responses, headers included): `tmp/spike/ignav/` — gitignored, they become `Supply` fixtures in A-6.
+- **Календаря цен нет.** «Гибкий поиск» — это мультигород: плечо несёт одну `departure_date`.
+  Поэтому «сдвинь даты и сэкономь X» стоит одного запроса на дату.
+- **У `booking-links` два взаимоисключающих режима поиска.** `ignav_id` нельзя сочетать с `market` или полями
+  пассажиров: `conflicting_booking_lookup_mode`.
+- **Квота из API НЕИЗВЕСТНА.** Ни на одном ответе нет заголовка `X-RateLimit-*`; страница тарифов заявляет 1000
+  бесплатных запросов, затем 2 $ за 1000, и счётчик виден только в личном кабинете.
+- `price.status` принимает значения `verified` или `unverified` — собственная уверенность поставщика, и она
+  путешествует вместе с тарифом.
+
+Сырые захваты: `packs/supply/fixtures/ignav/` (рынок по умолчанию — то, что отдаёт адаптер) и
+`packs/supply/fixtures/ignav/market_ru/` (вводящий в заблуждение набор, сохранён как доказательство исправления).
 
 ---
 
