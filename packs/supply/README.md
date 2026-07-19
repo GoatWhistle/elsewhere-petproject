@@ -1,5 +1,19 @@
 # Supply — the outside world and the corpus
 
+> ## ⚠ Not merged into `main`
+>
+> All of Supply (**A-0 … A-7**) lives on the branch **`pool-a-supply`** and is **deliberately not merged**.
+> `bin/check` is green on it — 79 examples, packwerk and the frontend included — but the merge is the lead's
+> call, not this package's.
+>
+> One thing to read before merging: **the A-0 finding about Ignav was wrong and is corrected here.** Sending
+> `market: "RU"` hid every nonstop Russian flight, which is what nearly triggered
+> [DEC-027](../../docs/00_project/decision_log.md) branch 2. It should not fire — the fare stays observed and
+> the product keeps exactly one synthetic number. See
+> [the research log](../../docs/02_research/research_log.md) and the Flights section below.
+>
+> Three things this package could not decide for itself, listed under [Open ends](#open-ends).
+
 Everything in this system that makes a network call lives here (hard rule 3). Everything here answers in both
 `live` and `fixture` mode, and every read says what it is: `freshness` (`live` / `cached` / `fixture`) and, for
 money, `basis` (`observed` / `modeled`).
@@ -336,3 +350,19 @@ index. There is no geography column to keep in sync, and no postgis adapter gem 
 the data, not a derivative of two numerics. It has deliberately **no ActiveRecord model**: without the postgis
 adapter gem a model would announce "unknown OID" on every boot, and nothing needs one — the import writes it in
 bulk and A-4 reads it with PostGIS functions.
+
+## Open ends
+
+Not blockers for Supply, but nobody else can close them either.
+
+1. **Which currency a trip total is in.** Ignav's default market prices in **USD**; roubles come only from
+   `market: "RU"`, the setting that hides the real flights, and there is no `currency` parameter. So the fare is
+   observed in USD while the room rate is modeled in RUB, and `PriceBreakdown.total` needs one of them.
+   **An FX rate is a new number**, and whether it is observed or modeled is the lead's call — Supply is not
+   going to pick one quietly.
+2. **`ORS_API_KEY` is unset**, so `airport_transfer_min` is absent with a reason rather than estimated. The
+   adapter is written and wired; drop a key into `.env` and it fills in. Walkability does not depend on it.
+3. **Two things outside this pack's files** that bite a fresh clone: `docker-compose.yml` does not pass
+   `IGNAV_API_KEY` or `ORS_API_KEY` through to the `app` service, so live mode inside the container cannot
+   reach anything; and `bin/setup` never prepares the **test** database, so `bin/check` fails on a fresh clone
+   with `elsewhere_test does not exist` until `RAILS_ENV=test bin/rails db:prepare` has been run once.

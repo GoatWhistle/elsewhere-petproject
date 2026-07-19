@@ -63,6 +63,20 @@ RSpec.describe Supply::Harvest do
       expect(DestinationRecord.find_by(city_code: "AER").centre_source).to eq("property_centroid")
     end
 
+    it "never downgrades a centre a better source has already set" do
+      cache = cache_with(Supply::Harvest::Catalogue101.city_url("sochi") => excerpt)
+      described_class.run(cities: [city], categories: [], cache: cache)
+
+      # A-3 replaces the harvested centroid with the real OSM place node.
+      DestinationRecord.find_by(city_code: "AER")
+                       .update!(lat: 43.585482, lon: 39.723109, centre_source: "osm_place")
+      described_class.run(cities: [city], categories: [], cache: cache)
+
+      expect(DestinationRecord.find_by(city_code: "AER")).to have_attributes(
+        centre_source: "osm_place", lat: 43.585482, lon: 39.723109
+      )
+    end
+
     it "is re-runnable: a second pass changes nothing and re-requests nothing" do
       cache = cache_with(Supply::Harvest::Catalogue101.city_url("sochi") => excerpt)
 

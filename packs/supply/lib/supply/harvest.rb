@@ -120,12 +120,15 @@ module Supply
       destination = DestinationRecord.find_or_initialize_by(city_code: city.city_code)
       destination.assign_attributes(
         name: city.name, country: city.country, source: SOURCE, source_slug: city.slug,
-        geography_type: city.geography_type, peak_season: city.peak_season,
-        # No city centre is published on these pages, so this is the middle of what we harvested and says so.
-        # A-3 replaces it with the OSM place node.
-        lat: median(points.map(&:first)), lon: median(points.map(&:last)),
-        centre_source: "property_centroid"
+        geography_type: city.geography_type, peak_season: city.peak_season
       )
+
+      # No city centre is published here, so this pass offers the centroid of what it harvested and says so in
+      # `centre_source`. It must never replace the real OSM place node with it.
+      if destination.centre_source.nil? || destination.centre_source == "property_centroid"
+        destination.assign_attributes(lat: median(points.map(&:first)), lon: median(points.map(&:last)),
+                                      centre_source: "property_centroid")
+      end
       destination.save!
 
       records.count do |record|
