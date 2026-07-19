@@ -20,7 +20,7 @@ module Supply
     end
 
     # A city as the caller declares it: which cities and which geography is curation, not collection.
-    City = Struct.new(:slug, :city_code, :name, :country, :geography_type, keyword_init: true)
+    City = Struct.new(:slug, :city_code, :name, :country, :geography_type, :peak_season, keyword_init: true)
 
     SOURCE = "101hotels".freeze
 
@@ -120,7 +120,7 @@ module Supply
       destination = DestinationRecord.find_or_initialize_by(city_code: city.city_code)
       destination.assign_attributes(
         name: city.name, country: city.country, source: SOURCE, source_slug: city.slug,
-        geography_type: city.geography_type,
+        geography_type: city.geography_type, peak_season: city.peak_season,
         # No city centre is published on these pages, so this is the middle of what we harvested and says so.
         # A-3 replaces it with the OSM place node.
         lat: median(points.map(&:first)), lon: median(points.map(&:last)),
@@ -174,7 +174,7 @@ module Supply
       attributes = city.transform_keys(&:to_sym)
       City.new(slug: attributes.fetch(:slug), city_code: attributes.fetch(:city_code),
                name: attributes.fetch(:name), country: attributes.fetch(:country, "RU"),
-               geography_type: attributes[:geography_type])
+               geography_type: attributes[:geography_type], peak_season: attributes[:peak_season])
     end
   end
 end

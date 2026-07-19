@@ -30,9 +30,11 @@ DROP INDEX IF EXISTS public.index_destinations_on_geography_type;
 DROP INDEX IF EXISTS public.index_destinations_on_city_code;
 DROP INDEX IF EXISTS public.index_destination_climate_normals_on_destination_id;
 DROP INDEX IF EXISTS public.index_destination_climate_normals_on_city_code_and_month;
+DROP INDEX IF EXISTS public.idx_on_city_code_month_model_version_c6628c0648;
 ALTER TABLE IF EXISTS ONLY public.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
 ALTER TABLE IF EXISTS ONLY public.property_geo_features DROP CONSTRAINT IF EXISTS property_geo_features_pkey;
 ALTER TABLE IF EXISTS ONLY public.properties DROP CONSTRAINT IF EXISTS properties_pkey;
+ALTER TABLE IF EXISTS ONLY public.price_calibrations DROP CONSTRAINT IF EXISTS price_calibrations_pkey;
 ALTER TABLE IF EXISTS ONLY public.planning_sessions DROP CONSTRAINT IF EXISTS planning_sessions_pkey;
 ALTER TABLE IF EXISTS ONLY public.osm_features DROP CONSTRAINT IF EXISTS osm_features_pkey;
 ALTER TABLE IF EXISTS ONLY public.jobs DROP CONSTRAINT IF EXISTS jobs_pkey;
@@ -45,6 +47,7 @@ ALTER TABLE IF EXISTS public.osm_features ALTER COLUMN id DROP DEFAULT;
 DROP TABLE IF EXISTS public.schema_migrations;
 DROP TABLE IF EXISTS public.property_geo_features;
 DROP TABLE IF EXISTS public.properties;
+DROP TABLE IF EXISTS public.price_calibrations;
 DROP TABLE IF EXISTS public.planning_sessions;
 DROP SEQUENCE IF EXISTS public.osm_features_id_seq;
 DROP TABLE IF EXISTS public.osm_features;
@@ -219,7 +222,8 @@ CREATE TABLE public.destinations (
     centre_source character varying DEFAULT 'property_centroid'::character varying NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    geography_type character varying
+    geography_type character varying,
+    peak_season character varying
 );
 
 
@@ -325,6 +329,26 @@ ALTER SEQUENCE public.osm_features_id_seq OWNED BY public.osm_features.id;
 CREATE TABLE public.planning_sessions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     payload jsonb DEFAULT '{}'::jsonb NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: price_calibrations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.price_calibrations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    city_code character varying NOT NULL,
+    month integer NOT NULL,
+    model_version character varying NOT NULL,
+    comfort numeric(4,3),
+    popularity numeric(4,3),
+    amplitude numeric(4,3),
+    seasonal_factor numeric(4,3) NOT NULL,
+    inputs jsonb DEFAULT '{}'::jsonb NOT NULL,
+    computed_at timestamp(6) without time zone NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
@@ -467,6 +491,14 @@ ALTER TABLE ONLY public.planning_sessions
 
 
 --
+-- Name: price_calibrations price_calibrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.price_calibrations
+    ADD CONSTRAINT price_calibrations_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: properties properties_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -488,6 +520,13 @@ ALTER TABLE ONLY public.property_geo_features
 
 ALTER TABLE ONLY public.schema_migrations
     ADD CONSTRAINT schema_migrations_pkey PRIMARY KEY (version);
+
+
+--
+-- Name: idx_on_city_code_month_model_version_c6628c0648; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_city_code_month_model_version_c6628c0648 ON public.price_calibrations USING btree (city_code, month, model_version);
 
 
 --
@@ -647,6 +686,7 @@ ALTER TABLE ONLY public.destination_climate_normals
 SET search_path TO public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260724090000'),
 ('20260723090000'),
 ('20260722090000'),
 ('20260721090000'),

@@ -14,6 +14,7 @@ require_relative "supply/climate_data"
 require_relative "supply/ignav"
 require_relative "supply/flights_data"
 require_relative "supply/flight_fixtures"
+require_relative "supply/rate_model"
 
 module Supply
   def self.adapter
@@ -114,6 +115,30 @@ module Supply
       def forecast(city_code:, from:, to:) = ClimateData.forecast(city_code: city_code, from: from, to: to)
     end
 
+    # A placeholder rate for fixture mode, and it says so: the real model is RateModel over a harvested
+    # property.
+    module FixtureRates
+      module_function
+
+      def for(property_id:, check_in:, check_out:, adults: 1)
+        property = Fixtures.property(id: property_id)
+        return { "amount" => nil, "basis" => "modeled", "freshness" => "fixture",
+                 "unassessed" => { "amount" => "unknown fixture property #{property_id}" } } unless property
+
+        nights = (Date.parse(check_out.to_s) - Date.parse(check_in.to_s)).to_i
+        seasonal = [6, 7, 8].include?(Date.parse(check_in.to_s).month) ? 1.25 : 0.85
+        {
+          "amount" => { "amount_minor" => (property.price_level * seasonal * nights).round, "currency" => "RUB" },
+          "basis" => "modeled", "freshness" => "fixture",
+          "calibration" => { "model_version" => "phase-0-placeholder", "city_code" => property.city_code,
+                             "statement" => "a Phase 0 placeholder, not the calibrated model" },
+          "handoff_url" => "https://example.invalid/properties/#{property_id}",
+          # The same silence RateModel reports: the fixture rate does not price the party either.
+          "unassessed" => adults.to_i > 1 ? { "occupancy" => "the base is per room; it is not adjusted for party size" } : {}
+        }
+      end
+    end
+
     module FixtureClimate
       module_function
 
@@ -190,12 +215,10 @@ module Supply
 
   module Rates
     module_function
-    def for(property_id:, check_in:, check_out:, adults:)
-      property = Catalog.property(id: property_id)
-      nights = (Date.parse(check_out.to_s) - Date.parse(check_in.to_s)).to_i
-      seasonal = [6, 7, 8].include?(Date.parse(check_in.to_s).month) ? 1.25 : 0.85
-      amount = (property.price_level * seasonal * nights).round
-      { "amount" => { "amount_minor" => amount, "currency" => "RUB" }, "basis" => "modeled", "freshness" => "fixture", "calibration" => "harvest:#{property_id}", "handoff_url" => "https://example.invalid/properties/#{property_id}" }
+
+    def source = Backend.current.rates
+    def for(property_id:, check_in:, check_out:, adults: 1)
+      source.for(property_id: property_id, check_in: check_in, check_out: check_out, adults: adults)
     end
   end
 
@@ -242,7 +265,7 @@ module Supply
       def catalog; Sources::Fixtures; end
       def geo; Sources::FixtureGeo; end
       def climate; Sources::FixtureClimate; end
-      def rates; Rates; end
+      def rates; Sources::FixtureRates; end
       def flights; FlightFixtures; end
       def reviews; Reviews; end
     end
@@ -254,6 +277,7 @@ module Supply
       def geo; Sources::DatabaseGeo; end
       def climate; Sources::DatabaseClimate; end
       def flights; FlightsData; end
+      def rates; RateModel; end
     end
   end
 

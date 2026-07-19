@@ -9,9 +9,15 @@ module Supply
   module Corpus
     GEOGRAPHY_TYPES = %w[city mountains sea].freeze
 
-    Entry = Struct.new(:slug, :city_code, :name, :country, :geography_type, :note, keyword_init: true) do
+    # `peak_season` is the second declared judgement: nothing in the climate says a ski resort is busiest at
+    # −16 °C, and reading "warm means expensive" off the thermometer puts Sheregesh's high season in July.
+    PEAK_SEASONS = %w[warm cold].freeze
+
+    Entry = Struct.new(:slug, :city_code, :name, :country, :geography_type, :peak_season, :note,
+                       keyword_init: true) do
       def to_city
-        { slug: slug, city_code: city_code, name: name, country: country, geography_type: geography_type }
+        { slug: slug, city_code: city_code, name: name, country: country,
+          geography_type: geography_type, peak_season: peak_season }
       end
     end
 
@@ -20,19 +26,19 @@ module Supply
     # city > mountains > sea: cities harvest most reliably, the rest supply the contrast.
     MANIFEST = [
       Entry.new(slug: "sankt-peterburg", city_code: "LED", name: "Санкт-Петербург", country: "Россия",
-                geography_type: "city", note: "Крупнейший городской корпус: плотная застройка, максимум POI"),
+                geography_type: "city", peak_season: "warm", note: "Крупнейший городской корпус: плотная застройка, максимум POI"),
       Entry.new(slug: "kazan", city_code: "KZN", name: "Казань", country: "Россия",
-                geography_type: "city", note: "Компактный центр — контраст к Петербургу по масштабу"),
+                geography_type: "city", peak_season: "warm", note: "Компактный центр — контраст к Петербургу по масштабу"),
       Entry.new(slug: "kaliningrad", city_code: "KGD", name: "Калининград", country: "Россия",
-                geography_type: "city", note: "Город у холодного моря — не «тёплое море», а именно город"),
+                geography_type: "city", peak_season: "warm", note: "Город у холодного моря — не «тёплое море», а именно город"),
       Entry.new(slug: "kislovodsk", city_code: "MRV", name: "Кавказские Минеральные Воды", country: "Россия",
-                geography_type: "mountains", note: "Горы и курортный парк, ближайший аэропорт MRV"),
+                geography_type: "mountains", peak_season: "warm", note: "Горы и курортный парк, сезон летний, ближайший аэропорт MRV"),
       Entry.new(slug: "sheregesh", city_code: "NOZ", name: "Шерегеш", country: "Россия",
-                geography_type: "mountains", note: "Горнолыжный контраст: далеко, дёшево, сезонно"),
+                geography_type: "mountains", peak_season: "cold", note: "Горнолыжный: пик зимой, а не летом: далеко, дёшево, сезонно"),
       Entry.new(slug: "sochi", city_code: "AER", name: "Сочи", country: "Россия",
-                geography_type: "sea", note: "Тёплое море, самый дорогой и самый людный конец обеих осей"),
+                geography_type: "sea", peak_season: "warm", note: "Тёплое море, самый дорогой и самый людный конец обеих осей"),
       Entry.new(slug: "anapa", city_code: "AAQ", name: "Анапа", country: "Россия",
-                geography_type: "sea", note: "Тёплое море дешевле Сочи — иначе ось «дорого/дёшево» схлопывается")
+                geography_type: "sea", peak_season: "warm", note: "Тёплое море дешевле Сочи — иначе ось «дорого/дёшево» схлопывается")
     ].freeze
 
     # Both ends of the price axis in every city, verified on all seven listing pages, so medians are comparable.

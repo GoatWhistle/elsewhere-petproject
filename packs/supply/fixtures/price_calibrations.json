@@ -1,0 +1,1682 @@
+[
+  {
+    "city_code": "AAQ",
+    "month": 1,
+    "model_version": "seasonal-v1",
+    "comfort": 0.045,
+    "popularity": 0.197,
+    "amplitude": 0.209,
+    "seasonal_factor": 0.81,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 10.6,
+      "peak_season": "warm",
+      "temp_mean_c": 3.2,
+      "annual_temp_range_c": [
+        3.2,
+        25.4
+      ],
+      "reviews_per_property": 73.6896551724138
+    }
+  },
+  {
+    "city_code": "AAQ",
+    "month": 2,
+    "model_version": "seasonal-v1",
+    "comfort": 0.005,
+    "popularity": 0.197,
+    "amplitude": 0.209,
+    "seasonal_factor": 0.793,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 9.4,
+      "peak_season": "warm",
+      "temp_mean_c": 3.5,
+      "annual_temp_range_c": [
+        3.2,
+        25.4
+      ],
+      "reviews_per_property": 73.6896551724138
+    }
+  },
+  {
+    "city_code": "AAQ",
+    "month": 3,
+    "model_version": "seasonal-v1",
+    "comfort": 0.074,
+    "popularity": 0.197,
+    "amplitude": 0.209,
+    "seasonal_factor": 0.822,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 9.9,
+      "peak_season": "warm",
+      "temp_mean_c": 6.3,
+      "annual_temp_range_c": [
+        3.2,
+        25.4
+      ],
+      "reviews_per_property": 73.6896551724138
+    }
+  },
+  {
+    "city_code": "AAQ",
+    "month": 4,
+    "model_version": "seasonal-v1",
+    "comfort": 0.243,
+    "popularity": 0.197,
+    "amplitude": 0.209,
+    "seasonal_factor": 0.892,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 12.1,
+      "peak_season": "warm",
+      "temp_mean_c": 11.1,
+      "annual_temp_range_c": [
+        3.2,
+        25.4
+      ],
+      "reviews_per_property": 73.6896551724138
+    }
+  },
+  {
+    "city_code": "AAQ",
+    "month": 5,
+    "model_version": "seasonal-v1",
+    "comfort": 0.484,
+    "popularity": 0.197,
+    "amplitude": 0.209,
+    "seasonal_factor": 0.993,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 15.9,
+      "peak_season": "warm",
+      "temp_mean_c": 16.6,
+      "annual_temp_range_c": [
+        3.2,
+        25.4
+      ],
+      "reviews_per_property": 73.6896551724138
+    }
+  },
+  {
+    "city_code": "AAQ",
+    "month": 6,
+    "model_version": "seasonal-v1",
+    "comfort": 0.801,
+    "popularity": 0.197,
+    "amplitude": 0.209,
+    "seasonal_factor": 1.126,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 21.9,
+      "peak_season": "warm",
+      "temp_mean_c": 21.8,
+      "annual_temp_range_c": [
+        3.2,
+        25.4
+      ],
+      "reviews_per_property": 73.6896551724138
+    }
+  },
+  {
+    "city_code": "AAQ",
+    "month": 7,
+    "model_version": "seasonal-v1",
+    "comfort": 0.98,
+    "popularity": 0.197,
+    "amplitude": 0.209,
+    "seasonal_factor": 1.201,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 25.0,
+      "peak_season": "warm",
+      "temp_mean_c": 25.3,
+      "annual_temp_range_c": [
+        3.2,
+        25.4
+      ],
+      "reviews_per_property": 73.6896551724138
+    }
+  },
+  {
+    "city_code": "AAQ",
+    "month": 8,
+    "model_version": "seasonal-v1",
+    "comfort": 1.0,
+    "popularity": 0.197,
+    "amplitude": 0.209,
+    "seasonal_factor": 1.209,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 25.5,
+      "peak_season": "warm",
+      "temp_mean_c": 25.4,
+      "annual_temp_range_c": [
+        3.2,
+        25.4
+      ],
+      "reviews_per_property": 73.6896551724138
+    }
+  },
+  {
+    "city_code": "AAQ",
+    "month": 9,
+    "model_version": "seasonal-v1",
+    "comfort": 0.837,
+    "popularity": 0.197,
+    "amplitude": 0.209,
+    "seasonal_factor": 1.141,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 23.7,
+      "peak_season": "warm",
+      "temp_mean_c": 20.1,
+      "annual_temp_range_c": [
+        3.2,
+        25.4
+      ],
+      "reviews_per_property": 73.6896551724138
+    }
+  },
+  {
+    "city_code": "AAQ",
+    "month": 10,
+    "model_version": "seasonal-v1",
+    "comfort": 0.593,
+    "popularity": 0.197,
+    "amplitude": 0.209,
+    "seasonal_factor": 1.039,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 20.0,
+      "peak_season": "warm",
+      "temp_mean_c": 14.2,
+      "annual_temp_range_c": [
+        3.2,
+        25.4
+      ],
+      "reviews_per_property": 73.6896551724138
+    }
+  },
+  {
+    "city_code": "AAQ",
+    "month": 11,
+    "model_version": "seasonal-v1",
+    "comfort": 0.354,
+    "popularity": 0.197,
+    "amplitude": 0.209,
+    "seasonal_factor": 0.939,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 16.1,
+      "peak_season": "warm",
+      "temp_mean_c": 9.0,
+      "annual_temp_range_c": [
+        3.2,
+        25.4
+      ],
+      "reviews_per_property": 73.6896551724138
+    }
+  },
+  {
+    "city_code": "AAQ",
+    "month": 12,
+    "model_version": "seasonal-v1",
+    "comfort": 0.174,
+    "popularity": 0.197,
+    "amplitude": 0.209,
+    "seasonal_factor": 0.864,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 13.0,
+      "peak_season": "warm",
+      "temp_mean_c": 5.4,
+      "annual_temp_range_c": [
+        3.2,
+        25.4
+      ],
+      "reviews_per_property": 73.6896551724138
+    }
+  },
+  {
+    "city_code": "AER",
+    "month": 1,
+    "model_version": "seasonal-v1",
+    "comfort": 0.031,
+    "popularity": 0.435,
+    "amplitude": 0.281,
+    "seasonal_factor": 0.737,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 11.1,
+      "peak_season": "warm",
+      "temp_mean_c": 5.8,
+      "annual_temp_range_c": [
+        5.8,
+        24.5
+      ],
+      "reviews_per_property": 231.17460317460316
+    }
+  },
+  {
+    "city_code": "AER",
+    "month": 2,
+    "model_version": "seasonal-v1",
+    "comfort": 0.0,
+    "popularity": 0.435,
+    "amplitude": 0.281,
+    "seasonal_factor": 0.719,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 10.2,
+      "peak_season": "warm",
+      "temp_mean_c": 5.8,
+      "annual_temp_range_c": [
+        5.8,
+        24.5
+      ],
+      "reviews_per_property": 231.17460317460316
+    }
+  },
+  {
+    "city_code": "AER",
+    "month": 3,
+    "model_version": "seasonal-v1",
+    "comfort": 0.053,
+    "popularity": 0.435,
+    "amplitude": 0.281,
+    "seasonal_factor": 0.749,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 10.5,
+      "peak_season": "warm",
+      "temp_mean_c": 7.8,
+      "annual_temp_range_c": [
+        5.8,
+        24.5
+      ],
+      "reviews_per_property": 231.17460317460316
+    }
+  },
+  {
+    "city_code": "AER",
+    "month": 4,
+    "model_version": "seasonal-v1",
+    "comfort": 0.224,
+    "popularity": 0.435,
+    "amplitude": 0.281,
+    "seasonal_factor": 0.845,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 12.9,
+      "peak_season": "warm",
+      "temp_mean_c": 12.0,
+      "annual_temp_range_c": [
+        5.8,
+        24.5
+      ],
+      "reviews_per_property": 231.17460317460316
+    }
+  },
+  {
+    "city_code": "AER",
+    "month": 5,
+    "model_version": "seasonal-v1",
+    "comfort": 0.457,
+    "popularity": 0.435,
+    "amplitude": 0.281,
+    "seasonal_factor": 0.976,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 16.8,
+      "peak_season": "warm",
+      "temp_mean_c": 16.7,
+      "annual_temp_range_c": [
+        5.8,
+        24.5
+      ],
+      "reviews_per_property": 231.17460317460316
+    }
+  },
+  {
+    "city_code": "AER",
+    "month": 6,
+    "model_version": "seasonal-v1",
+    "comfort": 0.749,
+    "popularity": 0.435,
+    "amplitude": 0.281,
+    "seasonal_factor": 1.14,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 22.7,
+      "peak_season": "warm",
+      "temp_mean_c": 21.0,
+      "annual_temp_range_c": [
+        5.8,
+        24.5
+      ],
+      "reviews_per_property": 231.17460317460316
+    }
+  },
+  {
+    "city_code": "AER",
+    "month": 7,
+    "model_version": "seasonal-v1",
+    "comfort": 0.931,
+    "popularity": 0.435,
+    "amplitude": 0.281,
+    "seasonal_factor": 1.242,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 26.3,
+      "peak_season": "warm",
+      "temp_mean_c": 23.8,
+      "annual_temp_range_c": [
+        5.8,
+        24.5
+      ],
+      "reviews_per_property": 231.17460317460316
+    }
+  },
+  {
+    "city_code": "AER",
+    "month": 8,
+    "model_version": "seasonal-v1",
+    "comfort": 1.0,
+    "popularity": 0.435,
+    "amplitude": 0.281,
+    "seasonal_factor": 1.281,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 27.9,
+      "peak_season": "warm",
+      "temp_mean_c": 24.5,
+      "annual_temp_range_c": [
+        5.8,
+        24.5
+      ],
+      "reviews_per_property": 231.17460317460316
+    }
+  },
+  {
+    "city_code": "AER",
+    "month": 9,
+    "model_version": "seasonal-v1",
+    "comfort": 0.845,
+    "popularity": 0.435,
+    "amplitude": 0.281,
+    "seasonal_factor": 1.194,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 25.8,
+      "peak_season": "warm",
+      "temp_mean_c": 20.6,
+      "annual_temp_range_c": [
+        5.8,
+        24.5
+      ],
+      "reviews_per_property": 231.17460317460316
+    }
+  },
+  {
+    "city_code": "AER",
+    "month": 10,
+    "model_version": "seasonal-v1",
+    "comfort": 0.59,
+    "popularity": 0.435,
+    "amplitude": 0.281,
+    "seasonal_factor": 1.05,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 21.1,
+      "peak_season": "warm",
+      "temp_mean_c": 16.1,
+      "annual_temp_range_c": [
+        5.8,
+        24.5
+      ],
+      "reviews_per_property": 231.17460317460316
+    }
+  },
+  {
+    "city_code": "AER",
+    "month": 11,
+    "model_version": "seasonal-v1",
+    "comfort": 0.356,
+    "popularity": 0.435,
+    "amplitude": 0.281,
+    "seasonal_factor": 0.919,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 17.1,
+      "peak_season": "warm",
+      "temp_mean_c": 11.5,
+      "annual_temp_range_c": [
+        5.8,
+        24.5
+      ],
+      "reviews_per_property": 231.17460317460316
+    }
+  },
+  {
+    "city_code": "AER",
+    "month": 12,
+    "model_version": "seasonal-v1",
+    "comfort": 0.155,
+    "popularity": 0.435,
+    "amplitude": 0.281,
+    "seasonal_factor": 0.806,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 13.5,
+      "peak_season": "warm",
+      "temp_mean_c": 7.8,
+      "annual_temp_range_c": [
+        5.8,
+        24.5
+      ],
+      "reviews_per_property": 231.17460317460316
+    }
+  },
+  {
+    "city_code": "KGD",
+    "month": 1,
+    "model_version": "seasonal-v1",
+    "comfort": 0.0,
+    "popularity": 0.653,
+    "amplitude": 0.346,
+    "seasonal_factor": 0.7,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 0.4,
+      "peak_season": "warm",
+      "temp_mean_c": -1.3,
+      "annual_temp_range_c": [
+        -1.3,
+        18.8
+      ],
+      "reviews_per_property": 564.438596491228
+    }
+  },
+  {
+    "city_code": "KGD",
+    "month": 2,
+    "model_version": "seasonal-v1",
+    "comfort": 0.029,
+    "popularity": 0.653,
+    "amplitude": 0.346,
+    "seasonal_factor": 0.7,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 0.8,
+      "peak_season": "warm",
+      "temp_mean_c": -0.4,
+      "annual_temp_range_c": [
+        -1.3,
+        18.8
+      ],
+      "reviews_per_property": 564.438596491228
+    }
+  },
+  {
+    "city_code": "KGD",
+    "month": 3,
+    "model_version": "seasonal-v1",
+    "comfort": 0.155,
+    "popularity": 0.653,
+    "amplitude": 0.346,
+    "seasonal_factor": 0.761,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 3.3,
+      "peak_season": "warm",
+      "temp_mean_c": 2.5,
+      "annual_temp_range_c": [
+        -1.3,
+        18.8
+      ],
+      "reviews_per_property": 564.438596491228
+    }
+  },
+  {
+    "city_code": "KGD",
+    "month": 4,
+    "model_version": "seasonal-v1",
+    "comfort": 0.402,
+    "popularity": 0.653,
+    "amplitude": 0.346,
+    "seasonal_factor": 0.932,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 8.5,
+      "peak_season": "warm",
+      "temp_mean_c": 7.8,
+      "annual_temp_range_c": [
+        -1.3,
+        18.8
+      ],
+      "reviews_per_property": 564.438596491228
+    }
+  },
+  {
+    "city_code": "KGD",
+    "month": 5,
+    "model_version": "seasonal-v1",
+    "comfort": 0.67,
+    "popularity": 0.653,
+    "amplitude": 0.346,
+    "seasonal_factor": 1.118,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 14.6,
+      "peak_season": "warm",
+      "temp_mean_c": 12.9,
+      "annual_temp_range_c": [
+        -1.3,
+        18.8
+      ],
+      "reviews_per_property": 564.438596491228
+    }
+  },
+  {
+    "city_code": "KGD",
+    "month": 6,
+    "model_version": "seasonal-v1",
+    "comfort": 0.898,
+    "popularity": 0.653,
+    "amplitude": 0.346,
+    "seasonal_factor": 1.275,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 20.2,
+      "peak_season": "warm",
+      "temp_mean_c": 16.7,
+      "annual_temp_range_c": [
+        -1.3,
+        18.8
+      ],
+      "reviews_per_property": 564.438596491228
+    }
+  },
+  {
+    "city_code": "KGD",
+    "month": 7,
+    "model_version": "seasonal-v1",
+    "comfort": 1.0,
+    "popularity": 0.653,
+    "amplitude": 0.346,
+    "seasonal_factor": 1.346,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 22.4,
+      "peak_season": "warm",
+      "temp_mean_c": 18.8,
+      "annual_temp_range_c": [
+        -1.3,
+        18.8
+      ],
+      "reviews_per_property": 564.438596491228
+    }
+  },
+  {
+    "city_code": "KGD",
+    "month": 8,
+    "model_version": "seasonal-v1",
+    "comfort": 0.991,
+    "popularity": 0.653,
+    "amplitude": 0.346,
+    "seasonal_factor": 1.339,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 22.2,
+      "peak_season": "warm",
+      "temp_mean_c": 18.6,
+      "annual_temp_range_c": [
+        -1.3,
+        18.8
+      ],
+      "reviews_per_property": 564.438596491228
+    }
+  },
+  {
+    "city_code": "KGD",
+    "month": 9,
+    "model_version": "seasonal-v1",
+    "comfort": 0.842,
+    "popularity": 0.653,
+    "amplitude": 0.346,
+    "seasonal_factor": 1.236,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 19.8,
+      "peak_season": "warm",
+      "temp_mean_c": 14.4,
+      "annual_temp_range_c": [
+        -1.3,
+        18.8
+      ],
+      "reviews_per_property": 564.438596491228
+    }
+  },
+  {
+    "city_code": "KGD",
+    "month": 10,
+    "model_version": "seasonal-v1",
+    "comfort": 0.544,
+    "popularity": 0.653,
+    "amplitude": 0.346,
+    "seasonal_factor": 1.031,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 12.7,
+      "peak_season": "warm",
+      "temp_mean_c": 9.2,
+      "annual_temp_range_c": [
+        -1.3,
+        18.8
+      ],
+      "reviews_per_property": 564.438596491228
+    }
+  },
+  {
+    "city_code": "KGD",
+    "month": 11,
+    "model_version": "seasonal-v1",
+    "comfort": 0.293,
+    "popularity": 0.653,
+    "amplitude": 0.346,
+    "seasonal_factor": 0.857,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 6.9,
+      "peak_season": "warm",
+      "temp_mean_c": 4.5,
+      "annual_temp_range_c": [
+        -1.3,
+        18.8
+      ],
+      "reviews_per_property": 564.438596491228
+    }
+  },
+  {
+    "city_code": "KGD",
+    "month": 12,
+    "model_version": "seasonal-v1",
+    "comfort": 0.1,
+    "popularity": 0.653,
+    "amplitude": 0.346,
+    "seasonal_factor": 0.723,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 2.6,
+      "peak_season": "warm",
+      "temp_mean_c": 0.7,
+      "annual_temp_range_c": [
+        -1.3,
+        18.8
+      ],
+      "reviews_per_property": 564.438596491228
+    }
+  },
+  {
+    "city_code": "KZN",
+    "month": 1,
+    "model_version": "seasonal-v1",
+    "comfort": 0.0,
+    "popularity": 0.609,
+    "amplitude": 0.333,
+    "seasonal_factor": 0.7,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": -10.6,
+      "annual_temp_range_c": [
+        -10.6,
+        20.7
+      ],
+      "reviews_per_property": 467.5689655172414
+    }
+  },
+  {
+    "city_code": "KZN",
+    "month": 2,
+    "model_version": "seasonal-v1",
+    "comfort": 0.006,
+    "popularity": 0.609,
+    "amplitude": 0.333,
+    "seasonal_factor": 0.7,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": -10.4,
+      "annual_temp_range_c": [
+        -10.6,
+        20.7
+      ],
+      "reviews_per_property": 467.5689655172414
+    }
+  },
+  {
+    "city_code": "KZN",
+    "month": 3,
+    "model_version": "seasonal-v1",
+    "comfort": 0.208,
+    "popularity": 0.609,
+    "amplitude": 0.333,
+    "seasonal_factor": 0.805,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": -4.1,
+      "annual_temp_range_c": [
+        -10.6,
+        20.7
+      ],
+      "reviews_per_property": 467.5689655172414
+    }
+  },
+  {
+    "city_code": "KZN",
+    "month": 4,
+    "model_version": "seasonal-v1",
+    "comfort": 0.473,
+    "popularity": 0.609,
+    "amplitude": 0.333,
+    "seasonal_factor": 0.982,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 4.2,
+      "annual_temp_range_c": [
+        -10.6,
+        20.7
+      ],
+      "reviews_per_property": 467.5689655172414
+    }
+  },
+  {
+    "city_code": "KZN",
+    "month": 5,
+    "model_version": "seasonal-v1",
+    "comfort": 0.757,
+    "popularity": 0.609,
+    "amplitude": 0.333,
+    "seasonal_factor": 1.171,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 13.1,
+      "annual_temp_range_c": [
+        -10.6,
+        20.7
+      ],
+      "reviews_per_property": 467.5689655172414
+    }
+  },
+  {
+    "city_code": "KZN",
+    "month": 6,
+    "model_version": "seasonal-v1",
+    "comfort": 0.917,
+    "popularity": 0.609,
+    "amplitude": 0.333,
+    "seasonal_factor": 1.277,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 18.1,
+      "annual_temp_range_c": [
+        -10.6,
+        20.7
+      ],
+      "reviews_per_property": 467.5689655172414
+    }
+  },
+  {
+    "city_code": "KZN",
+    "month": 7,
+    "model_version": "seasonal-v1",
+    "comfort": 1.0,
+    "popularity": 0.609,
+    "amplitude": 0.333,
+    "seasonal_factor": 1.333,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 20.7,
+      "annual_temp_range_c": [
+        -10.6,
+        20.7
+      ],
+      "reviews_per_property": 467.5689655172414
+    }
+  },
+  {
+    "city_code": "KZN",
+    "month": 8,
+    "model_version": "seasonal-v1",
+    "comfort": 0.933,
+    "popularity": 0.609,
+    "amplitude": 0.333,
+    "seasonal_factor": 1.288,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 18.6,
+      "annual_temp_range_c": [
+        -10.6,
+        20.7
+      ],
+      "reviews_per_property": 467.5689655172414
+    }
+  },
+  {
+    "city_code": "KZN",
+    "month": 9,
+    "model_version": "seasonal-v1",
+    "comfort": 0.735,
+    "popularity": 0.609,
+    "amplitude": 0.333,
+    "seasonal_factor": 1.156,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 12.4,
+      "annual_temp_range_c": [
+        -10.6,
+        20.7
+      ],
+      "reviews_per_property": 467.5689655172414
+    }
+  },
+  {
+    "city_code": "KZN",
+    "month": 10,
+    "model_version": "seasonal-v1",
+    "comfort": 0.505,
+    "popularity": 0.609,
+    "amplitude": 0.333,
+    "seasonal_factor": 1.003,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 5.2,
+      "annual_temp_range_c": [
+        -10.6,
+        20.7
+      ],
+      "reviews_per_property": 467.5689655172414
+    }
+  },
+  {
+    "city_code": "KZN",
+    "month": 11,
+    "model_version": "seasonal-v1",
+    "comfort": 0.268,
+    "popularity": 0.609,
+    "amplitude": 0.333,
+    "seasonal_factor": 0.846,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": -2.2,
+      "annual_temp_range_c": [
+        -10.6,
+        20.7
+      ],
+      "reviews_per_property": 467.5689655172414
+    }
+  },
+  {
+    "city_code": "KZN",
+    "month": 12,
+    "model_version": "seasonal-v1",
+    "comfort": 0.083,
+    "popularity": 0.609,
+    "amplitude": 0.333,
+    "seasonal_factor": 0.723,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": -8.0,
+      "annual_temp_range_c": [
+        -10.6,
+        20.7
+      ],
+      "reviews_per_property": 467.5689655172414
+    }
+  },
+  {
+    "city_code": "LED",
+    "month": 1,
+    "model_version": "seasonal-v1",
+    "comfort": 0.003,
+    "popularity": 0.72,
+    "amplitude": 0.366,
+    "seasonal_factor": 0.7,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": -0.1,
+      "peak_season": "warm",
+      "temp_mean_c": -5.8,
+      "annual_temp_range_c": [
+        -6.0,
+        18.7
+      ],
+      "reviews_per_property": 772.311475409836
+    }
+  },
+  {
+    "city_code": "LED",
+    "month": 2,
+    "model_version": "seasonal-v1",
+    "comfort": 0.0,
+    "popularity": 0.72,
+    "amplitude": 0.366,
+    "seasonal_factor": 0.7,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": -0.1,
+      "peak_season": "warm",
+      "temp_mean_c": -6.0,
+      "annual_temp_range_c": [
+        -6.0,
+        18.7
+      ],
+      "reviews_per_property": 772.311475409836
+    }
+  },
+  {
+    "city_code": "LED",
+    "month": 3,
+    "model_version": "seasonal-v1",
+    "comfort": 0.068,
+    "popularity": 0.72,
+    "amplitude": 0.366,
+    "seasonal_factor": 0.7,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 0.2,
+      "peak_season": "warm",
+      "temp_mean_c": -2.3,
+      "annual_temp_range_c": [
+        -6.0,
+        18.7
+      ],
+      "reviews_per_property": 772.311475409836
+    }
+  },
+  {
+    "city_code": "LED",
+    "month": 4,
+    "model_version": "seasonal-v1",
+    "comfort": 0.252,
+    "popularity": 0.72,
+    "amplitude": 0.366,
+    "seasonal_factor": 0.818,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 3.4,
+      "peak_season": "warm",
+      "temp_mean_c": 3.7,
+      "annual_temp_range_c": [
+        -6.0,
+        18.7
+      ],
+      "reviews_per_property": 772.311475409836
+    }
+  },
+  {
+    "city_code": "LED",
+    "month": 5,
+    "model_version": "seasonal-v1",
+    "comfort": 0.571,
+    "popularity": 0.72,
+    "amplitude": 0.366,
+    "seasonal_factor": 1.052,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 11.2,
+      "peak_season": "warm",
+      "temp_mean_c": 10.4,
+      "annual_temp_range_c": [
+        -6.0,
+        18.7
+      ],
+      "reviews_per_property": 772.311475409836
+    }
+  },
+  {
+    "city_code": "LED",
+    "month": 6,
+    "model_version": "seasonal-v1",
+    "comfort": 0.869,
+    "popularity": 0.72,
+    "amplitude": 0.366,
+    "seasonal_factor": 1.27,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 19.1,
+      "peak_season": "warm",
+      "temp_mean_c": 15.6,
+      "annual_temp_range_c": [
+        -6.0,
+        18.7
+      ],
+      "reviews_per_property": 772.311475409836
+    }
+  },
+  {
+    "city_code": "LED",
+    "month": 7,
+    "model_version": "seasonal-v1",
+    "comfort": 1.0,
+    "popularity": 0.72,
+    "amplitude": 0.366,
+    "seasonal_factor": 1.366,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 22.1,
+      "peak_season": "warm",
+      "temp_mean_c": 18.7,
+      "annual_temp_range_c": [
+        -6.0,
+        18.7
+      ],
+      "reviews_per_property": 772.311475409836
+    }
+  },
+  {
+    "city_code": "LED",
+    "month": 8,
+    "model_version": "seasonal-v1",
+    "comfort": 0.962,
+    "popularity": 0.72,
+    "amplitude": 0.366,
+    "seasonal_factor": 1.338,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 21.7,
+      "peak_season": "warm",
+      "temp_mean_c": 17.0,
+      "annual_temp_range_c": [
+        -6.0,
+        18.7
+      ],
+      "reviews_per_property": 772.311475409836
+    }
+  },
+  {
+    "city_code": "LED",
+    "month": 9,
+    "model_version": "seasonal-v1",
+    "comfort": 0.773,
+    "popularity": 0.72,
+    "amplitude": 0.366,
+    "seasonal_factor": 1.2,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 17.7,
+      "peak_season": "warm",
+      "temp_mean_c": 12.0,
+      "annual_temp_range_c": [
+        -6.0,
+        18.7
+      ],
+      "reviews_per_property": 772.311475409836
+    }
+  },
+  {
+    "city_code": "LED",
+    "month": 10,
+    "model_version": "seasonal-v1",
+    "comfort": 0.446,
+    "popularity": 0.72,
+    "amplitude": 0.366,
+    "seasonal_factor": 0.961,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 9.4,
+      "peak_season": "warm",
+      "temp_mean_c": 5.7,
+      "annual_temp_range_c": [
+        -6.0,
+        18.7
+      ],
+      "reviews_per_property": 772.311475409836
+    }
+  },
+  {
+    "city_code": "LED",
+    "month": 11,
+    "model_version": "seasonal-v1",
+    "comfort": 0.206,
+    "popularity": 0.72,
+    "amplitude": 0.366,
+    "seasonal_factor": 0.785,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 3.5,
+      "peak_season": "warm",
+      "temp_mean_c": 0.7,
+      "annual_temp_range_c": [
+        -6.0,
+        18.7
+      ],
+      "reviews_per_property": 772.311475409836
+    }
+  },
+  {
+    "city_code": "LED",
+    "month": 12,
+    "model_version": "seasonal-v1",
+    "comfort": 0.056,
+    "popularity": 0.72,
+    "amplitude": 0.366,
+    "seasonal_factor": 0.7,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": 0.3,
+      "peak_season": "warm",
+      "temp_mean_c": -3.2,
+      "annual_temp_range_c": [
+        -6.0,
+        18.7
+      ],
+      "reviews_per_property": 772.311475409836
+    }
+  },
+  {
+    "city_code": "MRV",
+    "month": 1,
+    "model_version": "seasonal-v1",
+    "comfort": 0.0,
+    "popularity": 0.242,
+    "amplitude": 0.223,
+    "seasonal_factor": 0.777,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": -1.7,
+      "annual_temp_range_c": [
+        -1.7,
+        20.0
+      ],
+      "reviews_per_property": 95.98245614035088
+    }
+  },
+  {
+    "city_code": "MRV",
+    "month": 2,
+    "model_version": "seasonal-v1",
+    "comfort": 0.032,
+    "popularity": 0.242,
+    "amplitude": 0.223,
+    "seasonal_factor": 0.792,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": -1.0,
+      "annual_temp_range_c": [
+        -1.7,
+        20.0
+      ],
+      "reviews_per_property": 95.98245614035088
+    }
+  },
+  {
+    "city_code": "MRV",
+    "month": 3,
+    "model_version": "seasonal-v1",
+    "comfort": 0.198,
+    "popularity": 0.242,
+    "amplitude": 0.223,
+    "seasonal_factor": 0.866,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 2.6,
+      "annual_temp_range_c": [
+        -1.7,
+        20.0
+      ],
+      "reviews_per_property": 95.98245614035088
+    }
+  },
+  {
+    "city_code": "MRV",
+    "month": 4,
+    "model_version": "seasonal-v1",
+    "comfort": 0.456,
+    "popularity": 0.242,
+    "amplitude": 0.223,
+    "seasonal_factor": 0.98,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 8.2,
+      "annual_temp_range_c": [
+        -1.7,
+        20.0
+      ],
+      "reviews_per_property": 95.98245614035088
+    }
+  },
+  {
+    "city_code": "MRV",
+    "month": 5,
+    "model_version": "seasonal-v1",
+    "comfort": 0.691,
+    "popularity": 0.242,
+    "amplitude": 0.223,
+    "seasonal_factor": 1.085,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 13.3,
+      "annual_temp_range_c": [
+        -1.7,
+        20.0
+      ],
+      "reviews_per_property": 95.98245614035088
+    }
+  },
+  {
+    "city_code": "MRV",
+    "month": 6,
+    "model_version": "seasonal-v1",
+    "comfort": 0.88,
+    "popularity": 0.242,
+    "amplitude": 0.223,
+    "seasonal_factor": 1.169,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 17.4,
+      "annual_temp_range_c": [
+        -1.7,
+        20.0
+      ],
+      "reviews_per_property": 95.98245614035088
+    }
+  },
+  {
+    "city_code": "MRV",
+    "month": 7,
+    "model_version": "seasonal-v1",
+    "comfort": 1.0,
+    "popularity": 0.242,
+    "amplitude": 0.223,
+    "seasonal_factor": 1.223,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 20.0,
+      "annual_temp_range_c": [
+        -1.7,
+        20.0
+      ],
+      "reviews_per_property": 95.98245614035088
+    }
+  },
+  {
+    "city_code": "MRV",
+    "month": 8,
+    "model_version": "seasonal-v1",
+    "comfort": 1.0,
+    "popularity": 0.242,
+    "amplitude": 0.223,
+    "seasonal_factor": 1.223,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 20.0,
+      "annual_temp_range_c": [
+        -1.7,
+        20.0
+      ],
+      "reviews_per_property": 95.98245614035088
+    }
+  },
+  {
+    "city_code": "MRV",
+    "month": 9,
+    "model_version": "seasonal-v1",
+    "comfort": 0.774,
+    "popularity": 0.242,
+    "amplitude": 0.223,
+    "seasonal_factor": 1.122,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 15.1,
+      "annual_temp_range_c": [
+        -1.7,
+        20.0
+      ],
+      "reviews_per_property": 95.98245614035088
+    }
+  },
+  {
+    "city_code": "MRV",
+    "month": 10,
+    "model_version": "seasonal-v1",
+    "comfort": 0.535,
+    "popularity": 0.242,
+    "amplitude": 0.223,
+    "seasonal_factor": 1.015,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 9.9,
+      "annual_temp_range_c": [
+        -1.7,
+        20.0
+      ],
+      "reviews_per_property": 95.98245614035088
+    }
+  },
+  {
+    "city_code": "MRV",
+    "month": 11,
+    "model_version": "seasonal-v1",
+    "comfort": 0.267,
+    "popularity": 0.242,
+    "amplitude": 0.223,
+    "seasonal_factor": 0.896,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 4.1,
+      "annual_temp_range_c": [
+        -1.7,
+        20.0
+      ],
+      "reviews_per_property": 95.98245614035088
+    }
+  },
+  {
+    "city_code": "MRV",
+    "month": 12,
+    "model_version": "seasonal-v1",
+    "comfort": 0.078,
+    "popularity": 0.242,
+    "amplitude": 0.223,
+    "seasonal_factor": 0.812,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "warm",
+      "temp_mean_c": 0.0,
+      "annual_temp_range_c": [
+        -1.7,
+        20.0
+      ],
+      "reviews_per_property": 95.98245614035088
+    }
+  },
+  {
+    "city_code": "NOZ",
+    "month": 1,
+    "model_version": "seasonal-v1",
+    "comfort": 1.0,
+    "popularity": 0.155,
+    "amplitude": 0.197,
+    "seasonal_factor": 1.197,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "cold",
+      "temp_mean_c": -15.9,
+      "annual_temp_range_c": [
+        -15.9,
+        17.7
+      ],
+      "reviews_per_property": 55.04
+    }
+  },
+  {
+    "city_code": "NOZ",
+    "month": 2,
+    "model_version": "seasonal-v1",
+    "comfort": 0.89,
+    "popularity": 0.155,
+    "amplitude": 0.197,
+    "seasonal_factor": 1.153,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "cold",
+      "temp_mean_c": -12.2,
+      "annual_temp_range_c": [
+        -15.9,
+        17.7
+      ],
+      "reviews_per_property": 55.04
+    }
+  },
+  {
+    "city_code": "NOZ",
+    "month": 3,
+    "model_version": "seasonal-v1",
+    "comfort": 0.67,
+    "popularity": 0.155,
+    "amplitude": 0.197,
+    "seasonal_factor": 1.067,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "cold",
+      "temp_mean_c": -4.8,
+      "annual_temp_range_c": [
+        -15.9,
+        17.7
+      ],
+      "reviews_per_property": 55.04
+    }
+  },
+  {
+    "city_code": "NOZ",
+    "month": 4,
+    "model_version": "seasonal-v1",
+    "comfort": 0.461,
+    "popularity": 0.155,
+    "amplitude": 0.197,
+    "seasonal_factor": 0.985,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "cold",
+      "temp_mean_c": 2.2,
+      "annual_temp_range_c": [
+        -15.9,
+        17.7
+      ],
+      "reviews_per_property": 55.04
+    }
+  },
+  {
+    "city_code": "NOZ",
+    "month": 5,
+    "model_version": "seasonal-v1",
+    "comfort": 0.247,
+    "popularity": 0.155,
+    "amplitude": 0.197,
+    "seasonal_factor": 0.901,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "cold",
+      "temp_mean_c": 9.4,
+      "annual_temp_range_c": [
+        -15.9,
+        17.7
+      ],
+      "reviews_per_property": 55.04
+    }
+  },
+  {
+    "city_code": "NOZ",
+    "month": 6,
+    "model_version": "seasonal-v1",
+    "comfort": 0.054,
+    "popularity": 0.155,
+    "amplitude": 0.197,
+    "seasonal_factor": 0.825,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "cold",
+      "temp_mean_c": 15.9,
+      "annual_temp_range_c": [
+        -15.9,
+        17.7
+      ],
+      "reviews_per_property": 55.04
+    }
+  },
+  {
+    "city_code": "NOZ",
+    "month": 7,
+    "model_version": "seasonal-v1",
+    "comfort": 0.0,
+    "popularity": 0.155,
+    "amplitude": 0.197,
+    "seasonal_factor": 0.803,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "cold",
+      "temp_mean_c": 17.7,
+      "annual_temp_range_c": [
+        -15.9,
+        17.7
+      ],
+      "reviews_per_property": 55.04
+    }
+  },
+  {
+    "city_code": "NOZ",
+    "month": 8,
+    "model_version": "seasonal-v1",
+    "comfort": 0.06,
+    "popularity": 0.155,
+    "amplitude": 0.197,
+    "seasonal_factor": 0.827,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "cold",
+      "temp_mean_c": 15.7,
+      "annual_temp_range_c": [
+        -15.9,
+        17.7
+      ],
+      "reviews_per_property": 55.04
+    }
+  },
+  {
+    "city_code": "NOZ",
+    "month": 9,
+    "model_version": "seasonal-v1",
+    "comfort": 0.244,
+    "popularity": 0.155,
+    "amplitude": 0.197,
+    "seasonal_factor": 0.899,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "cold",
+      "temp_mean_c": 9.5,
+      "annual_temp_range_c": [
+        -15.9,
+        17.7
+      ],
+      "reviews_per_property": 55.04
+    }
+  },
+  {
+    "city_code": "NOZ",
+    "month": 10,
+    "model_version": "seasonal-v1",
+    "comfort": 0.476,
+    "popularity": 0.155,
+    "amplitude": 0.197,
+    "seasonal_factor": 0.991,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "cold",
+      "temp_mean_c": 1.7,
+      "annual_temp_range_c": [
+        -15.9,
+        17.7
+      ],
+      "reviews_per_property": 55.04
+    }
+  },
+  {
+    "city_code": "NOZ",
+    "month": 11,
+    "model_version": "seasonal-v1",
+    "comfort": 0.75,
+    "popularity": 0.155,
+    "amplitude": 0.197,
+    "seasonal_factor": 1.098,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "cold",
+      "temp_mean_c": -7.5,
+      "annual_temp_range_c": [
+        -15.9,
+        17.7
+      ],
+      "reviews_per_property": 55.04
+    }
+  },
+  {
+    "city_code": "NOZ",
+    "month": 12,
+    "model_version": "seasonal-v1",
+    "comfort": 0.929,
+    "popularity": 0.155,
+    "amplitude": 0.197,
+    "seasonal_factor": 1.168,
+    "inputs": {
+      "basis": "the base is observed; this seasonality is modeled",
+      "sea_temp_c": null,
+      "peak_season": "cold",
+      "temp_mean_c": -13.5,
+      "annual_temp_range_c": [
+        -15.9,
+        17.7
+      ],
+      "reviews_per_property": 55.04
+    }
+  }
+]

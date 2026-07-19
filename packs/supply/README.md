@@ -200,6 +200,52 @@ have. The adapter is written and wired; without the key `airport_transfer_min` i
 `ORS_API_KEY is not set`. Walkability meanwhile has a local answer that does not need the key at all —
 `walk_network_m_500m` from the imported walk network — so the only thing actually missing is drive time.
 
+## Room rate — the one synthetic number (A-7)
+
+```sh
+bin/rails runner 'puts Supply::RateModel.calibrate!(log: ->(l) { puts l })'
+bin/rails runner 'p Supply::Rates.for(property_id: "101hotels:5716", check_in: "2026-08-01", check_out: "2026-08-08")'
+```
+
+```
+rate = observed base level (harvest) × seasonal factor (climate + popularity) × nights
+```
+
+**Only the base is observed.** "Busier season costs more" is our hypothesis, not a measurement, so the wording
+is *"the base is observed, the seasonality is modeled"* — never "calibrated on observed prices" (DEC-029). This
+is the one synthetic number in the product and it is labelled `modeled` everywhere it appears.
+
+Every rate carries its `calibration`: a stored row per destination, month and **model version**, with every
+input that produced it. So "why 12 000 in August" is a lookup — *base 5 200 ₽, factor 1.281, +28% from a
+seasonal comfort of 0.93 and a popularity of 0.44* — not an opinion.
+
+### The guards, measured on the real corpus
+
+| | |
+|---|---|
+| bounds | every one of the 84 factors lies in **0.70 – 1.60**; the corpus spans 0.70 – 1.37 |
+| monotone | within a destination, a more comfortable month is never cheaper |
+| deterministic | same property and dates → the same integer, always. A Simulator delta is otherwise noise |
+| exact across months | a stay from 29 Aug to 5 Sep prices three nights at 1.281 and four at 1.194, not seven at either |
+
+Peak months land where the places actually have them: **Sochi in August** (1.281, February 0.719),
+**Saint Petersburg in July** (1.366, winter 0.700), **Sheregesh in January** (1.197, July 0.803).
+
+### The judgement the model could not derive
+
+That last one only works because `peak_season` is **declared**. Read "warmer is more expensive" off a
+thermometer and a ski resort's high season lands in July — exactly backwards. Nothing in the harvest or the
+climate normals says a place is busiest at −16 °C, so `peak_season` sits in `Corpus::MANIFEST` beside
+`geography_type`: a curated judgement with its reason written next to it, not a number that would only look
+objective.
+
+Popularity does **not** move the price on its own — it sets how *seasonal* a destination is, which is the part
+that shows up in a January rate at a resort. Its half-saturation reference is fixed, like every other reference
+here, because a denominator drawn from the current corpus would rescore every existing Future the next time the
+corpus grew.
+
+A property whose observed base is missing gets **no rate** and a reason, never a rate resting on nothing.
+
 ## Flights (A-6)
 
 ```sh
