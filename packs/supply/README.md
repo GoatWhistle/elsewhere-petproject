@@ -1,18 +1,13 @@
 # Supply — the outside world and the corpus
 
-> ## ⚠ Not merged into `main`
->
-> All of Supply (**A-0 … A-7**) lives on the branch **`pool-a-supply`** and is **deliberately not merged**.
-> `bin/check` is green on it — 79 examples, packwerk and the frontend included — but the merge is the lead's
-> call, not this package's.
->
-> One thing to read before merging: **the A-0 finding about Ignav was wrong and is corrected here.** Sending
-> `market: "RU"` hid every nonstop Russian flight, which is what nearly triggered
-> [DEC-027](../../docs/00_project/decision_log.md) branch 2. It should not fire — the fare stays observed and
-> the product keeps exactly one synthetic number. See
+> **One thing to know before building on this: the first research finding about Ignav was wrong and is
+> corrected here.**
+> Sending `market: "RU"` hid every nonstop Russian flight, which is what nearly triggered
+> [DEC-027](../../docs/00_project/decision_log.md) branch 2. It does not fire — the fare stays observed and the
+> product keeps exactly one synthetic number, the room rate. See
 > [the research log](../../docs/02_research/research_log.md) and the Flights section below.
 >
-> Three things this package could not decide for itself, listed under [Open ends](#open-ends).
+> Three things this package cannot decide for itself are listed under [Open ends](#open-ends).
 
 Everything in this system that makes a network call lives here (hard rule 3). Everything here answers in both
 `live` and `fixture` mode, and every read says what it is: `freshness` (`live` / `cached` / `fixture`) and, for
