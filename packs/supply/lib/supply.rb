@@ -15,6 +15,7 @@ require_relative "supply/ignav"
 require_relative "supply/flights_data"
 require_relative "supply/flight_fixtures"
 require_relative "supply/rate_model"
+require_relative "supply/rate_validation"
 
 module Supply
   def self.adapter

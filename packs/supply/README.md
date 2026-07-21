@@ -240,6 +240,35 @@ seasonal comfort of 0.93 and a popularity of 0.44* — not an opinion.
 Peak months land where the places actually have them: **Sochi in August** (1.281, February 0.719),
 **Saint Petersburg in July** (1.366, winter 0.700), **Sheregesh in January** (1.197, July 0.803).
 
+### Is it defensible? (OQ-A — jointly with Foresight)
+
+```sh
+bin/rails runner 'pp Supply::RateValidation.report'
+```
+
+Five properties the model has to hold on the real corpus, each able to fail:
+
+| check | result |
+|---|---|
+| anchored to the observed base | 84 factors in 0.70–1.37, inside the declared 0.70–1.60 |
+| unbiased over a year | per-destination means 0.966 – 1.002, tolerance ±5% |
+| a season worth shifting | ×1.49 (Шерегеш) to ×1.95 (Петербург), minimum ×1.4 |
+| order of the corpus preserved | every destination keeps its price order in all 12 months |
+| the base is the property's own | asserted end to end, not in the report — see below |
+
+The **unbiased** one is the load-bearing check. Averaged over a year the factor should be about 1; anything else
+means the model is quietly restating every price the harvest observed, which is the failure mode that would make
+the whole anchor worthless. It measures 0.9875 across the corpus.
+
+"Calibrated per property, not a global formula" is deliberately **not** in the report: with `rate = base ×
+factor` it cannot fail on that data, and a check that cannot fail is decoration. It is asserted where it can
+fail — two real properties through `Supply::Rates`, whose rates come out in the ratio of their observed levels.
+
+**What none of this checks** is whether a July night in Sochi really costs 28% more than the "from" price. That
+needs observed dated prices, which no free source has (DEC-016) and which the lead ruled out collecting by hand
+(DEC-029). The seasonality stays a hypothesis; what is verifiable is that it never runs away from the observed
+anchor, and that is what these measure.
+
 ### The judgement the model could not derive
 
 That last one only works because `peak_season` is **declared**. Read "warmer is more expensive" off a
