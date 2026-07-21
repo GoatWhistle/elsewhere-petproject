@@ -4,6 +4,12 @@ require_relative "../../shared/lib/elsewhere/values"
 require_relative "../../supply/lib/supply"
 require_relative "../../planning/lib/planning"
 require_relative "foresight/evidence"
+require_relative "foresight/rules/night_noise"
+require_relative "foresight/rules/walkability"
+require_relative "foresight/rules/weather_mismatch"
+require_relative "foresight/rules/transfer_difficulty"
+require_relative "foresight/rules"
+require_relative "foresight/scoring"
 
 module Foresight
   # What could go wrong for this person, stated with its evidence or not stated at all. There is no review
@@ -27,10 +33,24 @@ module Foresight
       }
     end
 
+    # Only rules that actually fired become risks. A rule that ran and found nothing wrong is not a risk with
+    # severity "low" — it is silence, and coverage is where it is accounted for.
     def risks(_future, evidence)
-      return [] unless evidence.available?("night_noise")
+      Rules.findings(evidence).select(&:triggered?).map { |finding| risk_item(finding) }
+    end
 
-      [night_noise(evidence)]
+    def risk_item(finding)
+      {
+        "id" => "risk-#{finding.risk_type}",
+        "risk_type" => finding.risk_type,
+        "severity" => Scoring.severity(finding),
+        "confidence" => Scoring.confidence(finding),
+        "claim_kind" => finding.claim_kind,
+        "affected_dimension" => finding.affected_dimension,
+        "statement" => finding.statement,
+        "evidence" => finding.evidence,
+        "mitigations" => []
+      }
     end
 
     # Every risk type says whether it was assessed and why not, in the words of whatever refused to answer.
@@ -42,36 +62,6 @@ module Foresight
         entry["reason"] = evidence.unavailable_reason(risk_type) unless assessed
         entry
       end
-    end
-
-    def night_noise(evidence)
-      metres = evidence.geo_value("nearest_major_road_m").to_i
-      road_class = evidence.geo_value("road_class")
-
-      {
-        "id" => "risk-night_noise",
-        "risk_type" => "night_noise",
-        "severity" => metres < 300 ? "high" : "low",
-        "confidence" => 0.5,
-        # A road distance is measured; "the room will be noisy" is reasoning on top of it. The label is the
-        # difference between a forecast and a rumour, and it never gets upgraded by how sure the prose sounds.
-        "claim_kind" => "model_inference",
-        "affected_dimension" => "quiet",
-        "statement" => "Рядом проходит дорога класса #{road_class} — это повышает вероятность ночного шума. " \
-                       "Это вывод из расстояния, а не измерение шума и не отзыв.",
-        "evidence" => [
-          {
-            "source" => "geo",
-            "excerpt" => "Ближайшая крупная дорога: #{metres} м (#{road_class}).",
-            "observed_at" => Date.today.iso8601,
-            "count" => nil
-          }
-        ],
-        "mitigations" => [
-          { "id" => "mitigate-quiet-room", "description" => "Выбрать номер во двор",
-            "price_change" => { "amount_minor" => 3400, "currency" => "RUB" }, "severity_after" => "low" }
-        ]
-      }
     end
 
     def mitigation_adjustment(risk_id:, mitigation_id:)
