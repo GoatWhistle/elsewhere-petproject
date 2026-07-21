@@ -11,6 +11,7 @@ require_relative "foresight/rules/transfer_difficulty"
 require_relative "foresight/rules"
 require_relative "foresight/scoring"
 require_relative "foresight/relevance"
+require_relative "foresight/mitigations"
 
 module Foresight
   # What could go wrong for this person, stated with its evidence or not stated at all. There is no review
@@ -30,21 +31,21 @@ module Foresight
       {
         "future_id" => future_id,
         "generated_at" => Time.now.utc.iso8601,
-        "risks" => risks(evidence, dna),
+        "risks" => risks(future, evidence, dna),
         "coverage" => coverage(evidence)
       }
     end
 
     # Only rules that fired, and only for dimensions this traveller cares about. A rule that found nothing is
     # silence, not a "low" risk, and `coverage` still reports the type as assessable.
-    def risks(evidence, dna)
+    def risks(future, evidence, dna)
       findings = Rules.findings(evidence, dna: dna).select(&:triggered?)
-      Relevance.filter(findings, dna).map { |finding| risk_item(finding) }
+      Relevance.filter(findings, dna).map { |finding| risk_item(finding, evidence, future) }
     end
 
-    def risk_item(finding)
+    def risk_item(finding, evidence = nil, future = {})
       {
-        "id" => "risk-#{finding.risk_type}",
+        "id" => Mitigations.risk_id(future, finding),
         "risk_type" => finding.risk_type,
         "severity" => Scoring.severity(finding),
         "confidence" => Scoring.confidence(finding),
@@ -52,7 +53,7 @@ module Foresight
         "affected_dimension" => finding.affected_dimension,
         "statement" => finding.statement,
         "evidence" => finding.evidence,
-        "mitigations" => []
+        "mitigations" => evidence ? Mitigations.for_finding(finding, evidence, future) : []
       }
     end
 
@@ -67,8 +68,19 @@ module Foresight
       end
     end
 
+    # The adjustment payload for one mitigation; applying it is Planning::Simulator's job. The interface
+    # carries no future, so the risk id does, and recomputing is exact because a Future is immutable.
     def mitigation_adjustment(risk_id:, mitigation_id:)
-      { "dimension" => "quiet", "direction" => "increase", "magnitude" => 0.25 }
+      future_id, risk_type = Mitigations.parse_risk_id(risk_id)
+      future = Planning::Futures.find(future_id: future_id)
+      raise ArgumentError, "unknown future in risk id #{risk_id}" unless future
+
+      evidence = Evidence.for_future(future)
+      finding = Rules.findings(evidence, dna: Relevance.dna_for(future))
+                     .find { |candidate| candidate.risk_type == risk_type }
+      raise ArgumentError, "no #{risk_type} risk on future #{future_id}" unless finding
+
+      Mitigations.adjustment(finding, mitigation_id)
     end
   end
 end
