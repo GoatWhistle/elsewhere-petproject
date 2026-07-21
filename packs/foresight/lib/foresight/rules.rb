@@ -23,11 +23,15 @@ module Foresight
     module_function
 
     # Every rule whose evidence exists, fired or not: coverage must tell "found nothing" from "could not run".
-    def findings(evidence)
+    def findings(evidence, dna: nil)
       ALL.filter_map do |rule|
         next unless evidence.available?(rule::RISK_TYPE)
 
-        rule.call(evidence)
+        if rule == WeatherMismatch
+          rule.call(evidence, target: Relevance.climate_target(dna))
+        else
+          rule.call(evidence)
+        end
       end
     end
   end

@@ -10,6 +10,7 @@ require_relative "foresight/rules/weather_mismatch"
 require_relative "foresight/rules/transfer_difficulty"
 require_relative "foresight/rules"
 require_relative "foresight/scoring"
+require_relative "foresight/relevance"
 
 module Foresight
   # What could go wrong for this person, stated with its evidence or not stated at all. There is no review
@@ -24,19 +25,21 @@ module Foresight
     def for_future(future_id:)
       future = Planning::Futures.find(future_id: future_id)
       evidence = Evidence.for_future(future)
+      dna = Relevance.dna_for(future)
 
       {
         "future_id" => future_id,
         "generated_at" => Time.now.utc.iso8601,
-        "risks" => risks(future, evidence),
+        "risks" => risks(evidence, dna),
         "coverage" => coverage(evidence)
       }
     end
 
-    # Only rules that actually fired become risks. A rule that ran and found nothing wrong is not a risk with
-    # severity "low" — it is silence, and coverage is where it is accounted for.
-    def risks(_future, evidence)
-      Rules.findings(evidence).select(&:triggered?).map { |finding| risk_item(finding) }
+    # Only rules that fired, and only for dimensions this traveller cares about. A rule that found nothing is
+    # silence, not a "low" risk, and `coverage` still reports the type as assessable.
+    def risks(evidence, dna)
+      findings = Rules.findings(evidence, dna: dna).select(&:triggered?)
+      Relevance.filter(findings, dna).map { |finding| risk_item(finding) }
     end
 
     def risk_item(finding)
