@@ -17,11 +17,16 @@ RSpec.describe "Phase 0 walking skeleton", type: :request do
     expect(session.dig("travel_dna", "elements").map { |item| item["dimension"] }).to include("sea_access")
     expect(PlanningSessionRecord.count).to eq(1)
 
-    confirmed = session.dig("travel_dna", "elements").select { |element| element["weight"] }.first(2)
+    all_elements = session.dig("travel_dna", "elements")
+    confirmed = all_elements.select { |element| element["weight"] }.first(2)
     patch "/planning-sessions/#{session.fetch("id")}/travel-dna", params: { elements: confirmed }, as: :json
     expect(response).to have_http_status(:ok)
     get "/planning-sessions/#{session.fetch("id")}"
-    expect(response.parsed_body.dig("travel_dna", "elements").size).to eq(2)
+    # PATCH is an upsert by dimension (B-2): editing two elements confirms those two and erases none of the
+    # rest. Phase 0's stub replaced the whole set, and this assertion used to encode that.
+    updated = response.parsed_body.dig("travel_dna", "elements")
+    expect(updated.size).to eq(all_elements.size)
+    expect(updated.select { |element| element["provenance"] == "confirmed" }.size).to eq(2)
 
     post "/planning-sessions/#{session.fetch("id")}/futures", as: :json
     expect(response).to have_http_status(:accepted)

@@ -8,6 +8,7 @@ require_relative "planning/taxonomy"
 require_relative "planning/lexicon"
 require_relative "planning/clarifications"
 require_relative "planning/dream_parser"
+require_relative "planning/dna_store"
 
 module Planning
   module_function
@@ -19,7 +20,9 @@ module Planning
     def now; Time.now.utc.iso8601; end
     def create(dream_text:, origin:, date_window:, party:)
       id = Elsewhere::Store.id
-      dna = TravelDna.draft(dream_text, date_window, party)
+      draft = TravelDna.draft(dream_text, date_window, party)
+      # The stored version is the record; the draft still carries its unanswered questions.
+      dna = DnaStore.create(session_id: id, dna: draft).merge("_clarifications" => draft["_clarifications"])
       # Clarifications belong to the session, not the DNA: questions not yet asked, not beliefs about the user.
       session = { "id" => id, "created_at" => now, "dream_text" => dream_text, "travel_dna" => TravelDna.without_internals(dna),
                   "clarifications" => dna["_clarifications"] || [], "_origin" => origin,
@@ -58,20 +61,36 @@ module Planning
          .merge("elements" => Array(dna["elements"]).map { |element| element.reject { |key, _| key.start_with?("_") } })
     end
 
+    # An upsert by dimension that produces a new version. Editing one field must not erase the rest.
     def update(session_id:, elements:)
+      dna = DnaStore.update(session_id: session_id, elements: elements)
       session = Sessions.find(id: session_id)
-      previous = session["travel_dna"]
-      # Editing preferences creates a new version; it never mutates one (DEC-023).
-      dna = { "id" => Elsewhere::Store.id, "version" => previous["version"].to_i + 1, "elements" => elements.map { |e| e.merge("provenance" => e["provenance"] || "confirmed", "confidence" => 1.0) }, "unmatched_intent" => [] }
-      session["travel_dna"] = dna
-      Elsewhere::Store.save_session(session)
-      dna
-    end
-    def answer_clarifications(session_id:, answers:)
-      session = Sessions.find(id: session_id)
-      session["clarifications"] = []
+      session["travel_dna"] = without_internals(dna)
       Elsewhere::Store.save_session(session)
       session["travel_dna"]
+    end
+
+    # Answering removes that question only; wiping the list would lose the ones not yet asked.
+    def answer_clarifications(session_id:, answers:)
+      session = Sessions.find(id: session_id)
+      answered = Array(answers).map { |answer| (answer["id"] || answer[:id]).to_s }
+      elements = Array(answers).filter_map { |answer| clarification_element(answer) }
+
+      dna = elements.any? ? DnaStore.update(session_id: session_id, elements: elements) : DnaStore.find(session_id)
+      session["clarifications"] = Array(session["clarifications"]).reject { |c| answered.include?(c["id"]) }
+      session["travel_dna"] = without_internals(dna)
+      Elsewhere::Store.save_session(session)
+      session["travel_dna"]
+    end
+
+    # Only dimension answers change the DNA. Party and dates live on the session, and `budget_hard` says
+    # whether an existing element is a ceiling, not what it is.
+    def clarification_element(answer)
+      id = (answer["id"] || answer[:id]).to_s
+      value = answer.key?("value") ? answer["value"] : answer[:value]
+      return nil unless id == "car_free"
+
+      { "dimension" => "car_free", "kind" => "hard_constraint", "target" => value }
     end
   end
 

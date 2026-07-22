@@ -9,9 +9,12 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+ALTER TABLE IF EXISTS ONLY public.travel_dna_elements DROP CONSTRAINT IF EXISTS fk_rails_6ed0c623f0;
 ALTER TABLE IF EXISTS ONLY public.destination_climate_normals DROP CONSTRAINT IF EXISTS fk_rails_651984c22b;
 ALTER TABLE IF EXISTS ONLY public.property_geo_features DROP CONSTRAINT IF EXISTS fk_rails_587ecd987f;
 ALTER TABLE IF EXISTS ONLY public.properties DROP CONSTRAINT IF EXISTS fk_rails_26a568e578;
+DROP INDEX IF EXISTS public.index_travel_dna_versions_on_session_id_and_version;
+DROP INDEX IF EXISTS public.index_travel_dna_elements_on_travel_dna_version_id;
 DROP INDEX IF EXISTS public.index_property_geo_features_on_property_id;
 DROP INDEX IF EXISTS public.index_property_geo_features_on_city_code;
 DROP INDEX IF EXISTS public.index_properties_on_point;
@@ -30,7 +33,10 @@ DROP INDEX IF EXISTS public.index_destinations_on_geography_type;
 DROP INDEX IF EXISTS public.index_destinations_on_city_code;
 DROP INDEX IF EXISTS public.index_destination_climate_normals_on_destination_id;
 DROP INDEX IF EXISTS public.index_destination_climate_normals_on_city_code_and_month;
+DROP INDEX IF EXISTS public.idx_on_travel_dna_version_id_dimension_5a82433b19;
 DROP INDEX IF EXISTS public.idx_on_city_code_month_model_version_c6628c0648;
+ALTER TABLE IF EXISTS ONLY public.travel_dna_versions DROP CONSTRAINT IF EXISTS travel_dna_versions_pkey;
+ALTER TABLE IF EXISTS ONLY public.travel_dna_elements DROP CONSTRAINT IF EXISTS travel_dna_elements_pkey;
 ALTER TABLE IF EXISTS ONLY public.schema_migrations DROP CONSTRAINT IF EXISTS schema_migrations_pkey;
 ALTER TABLE IF EXISTS ONLY public.property_geo_features DROP CONSTRAINT IF EXISTS property_geo_features_pkey;
 ALTER TABLE IF EXISTS ONLY public.properties DROP CONSTRAINT IF EXISTS properties_pkey;
@@ -44,6 +50,8 @@ ALTER TABLE IF EXISTS ONLY public.destinations DROP CONSTRAINT IF EXISTS destina
 ALTER TABLE IF EXISTS ONLY public.destination_climate_normals DROP CONSTRAINT IF EXISTS destination_climate_normals_pkey;
 ALTER TABLE IF EXISTS ONLY public.ar_internal_metadata DROP CONSTRAINT IF EXISTS ar_internal_metadata_pkey;
 ALTER TABLE IF EXISTS public.osm_features ALTER COLUMN id DROP DEFAULT;
+DROP TABLE IF EXISTS public.travel_dna_versions;
+DROP TABLE IF EXISTS public.travel_dna_elements;
 DROP TABLE IF EXISTS public.schema_migrations;
 DROP TABLE IF EXISTS public.property_geo_features;
 DROP TABLE IF EXISTS public.properties;
@@ -420,6 +428,44 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: travel_dna_elements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.travel_dna_elements (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    travel_dna_version_id uuid NOT NULL,
+    dimension character varying NOT NULL,
+    kind character varying NOT NULL,
+    target jsonb,
+    weight numeric(4,3),
+    tolerance numeric(6,3),
+    provenance character varying NOT NULL,
+    confidence numeric(4,3) NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL,
+    derived_from character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
+-- Name: travel_dna_versions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.travel_dna_versions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    session_id uuid NOT NULL,
+    version integer NOT NULL,
+    parent_id uuid,
+    unmatched_intent jsonb DEFAULT '[]'::jsonb NOT NULL,
+    degraded boolean DEFAULT false NOT NULL,
+    degraded_reason character varying,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL
+);
+
+
+--
 -- Name: osm_features id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -523,10 +569,33 @@ ALTER TABLE ONLY public.schema_migrations
 
 
 --
+-- Name: travel_dna_elements travel_dna_elements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.travel_dna_elements
+    ADD CONSTRAINT travel_dna_elements_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: travel_dna_versions travel_dna_versions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.travel_dna_versions
+    ADD CONSTRAINT travel_dna_versions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: idx_on_city_code_month_model_version_c6628c0648; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX idx_on_city_code_month_model_version_c6628c0648 ON public.price_calibrations USING btree (city_code, month, model_version);
+
+
+--
+-- Name: idx_on_travel_dna_version_id_dimension_5a82433b19; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_on_travel_dna_version_id_dimension_5a82433b19 ON public.travel_dna_elements USING btree (travel_dna_version_id, dimension);
 
 
 --
@@ -656,6 +725,20 @@ CREATE UNIQUE INDEX index_property_geo_features_on_property_id ON public.propert
 
 
 --
+-- Name: index_travel_dna_elements_on_travel_dna_version_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_travel_dna_elements_on_travel_dna_version_id ON public.travel_dna_elements USING btree (travel_dna_version_id);
+
+
+--
+-- Name: index_travel_dna_versions_on_session_id_and_version; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_travel_dna_versions_on_session_id_and_version ON public.travel_dna_versions USING btree (session_id, version);
+
+
+--
 -- Name: properties fk_rails_26a568e578; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -680,12 +763,21 @@ ALTER TABLE ONLY public.destination_climate_normals
 
 
 --
+-- Name: travel_dna_elements fk_rails_6ed0c623f0; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.travel_dna_elements
+    ADD CONSTRAINT fk_rails_6ed0c623f0 FOREIGN KEY (travel_dna_version_id) REFERENCES public.travel_dna_versions(id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
 SET search_path TO public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260725090000'),
 ('20260724090000'),
 ('20260723090000'),
 ('20260722090000'),

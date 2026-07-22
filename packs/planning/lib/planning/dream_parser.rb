@@ -19,7 +19,10 @@ module Planning
     # editing the DNA has to be able to undo it when its basis disappears.
     INFERENCES = {
       "car_free" => %w[walkability transfer_simplicity],
-      "sea_access" => %w[climate_warm]
+      "sea_access" => %w[climate_warm],
+      # Wanting to walk everywhere does not rule out renting a car, so an inferred hard constraint must be
+      # confirmed before it disqualifies whole destinations; unconfirmed ones are not enforced.
+      "walkability" => %w[car_free]
     }.freeze
 
     TOLERANCE = { "nature_vs_city" => 0.15, "nightlife" => 0.2, "crowds" => 0.2, "climate_warm" => 3.0 }.freeze
