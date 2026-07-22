@@ -1,10 +1,10 @@
 # Foresight — what could go wrong, for this person
 
-> ## Foresight is complete, on `pool-c-foresight`
+> **Two things to know before building on this.** The room-rate defensibility report lives in `packs/supply/`
+> by design — it belongs beside the model it checks, and it was written jointly with the room-rate work.
 >
-> **C-1 … C-6** are done with `bin/check` green. Not merged into `main` — that is the lead's call.
-> C-6 touches `packs/supply/` by design: [tasks.md](../../docs/05_delivery/tasks.md) assigns it to Foresight
-> *jointly with A-7*, and it is the room-rate model's defensibility report.
+> Forecasts are computed on demand, so the four tables allocated to this package
+> (`forecasts`, `risk_items`, `risk_evidence`, `mitigations`) are deliberately unused — see the last section.
 
 Instead of a rating and a wall of reviews, this states the risks that matter **to this traveller**, each with the
 measurement behind it. A review score answers "was this good on average?"; a forecast answers "what is likely to
