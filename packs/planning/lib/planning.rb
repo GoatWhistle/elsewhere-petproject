@@ -4,6 +4,10 @@ require_relative "../../shared/lib/elsewhere/values"
 require_relative "elsewhere/store"
 require_relative "../../shared/lib/ai/task"
 require_relative "../../supply/lib/supply"
+require_relative "planning/taxonomy"
+require_relative "planning/lexicon"
+require_relative "planning/clarifications"
+require_relative "planning/dream_parser"
 
 module Planning
   module_function
@@ -17,7 +21,11 @@ module Planning
       id = Elsewhere::Store.id
       dna = TravelDna.draft(dream_text, date_window, party)
       # Clarifications belong to the session, not the DNA: questions not yet asked, not beliefs about the user.
-      session = { "id" => id, "created_at" => now, "dream_text" => dream_text, "travel_dna" => dna, "clarifications" => TravelDna.clarifications, "_origin" => origin, "_date_window" => date_window, "_party" => party }
+      session = { "id" => id, "created_at" => now, "dream_text" => dream_text, "travel_dna" => TravelDna.without_internals(dna),
+                  "clarifications" => dna["_clarifications"] || [], "_origin" => origin,
+                  "_date_window" => date_window, "_party" => party,
+                  # Surfaced rather than acted on: a DNA the model never saw is not the same fact as one it did.
+                  "_dna_degraded" => dna["_degraded"], "_dna_degraded_reason" => dna["_degraded_reason"] }
       Elsewhere::Store.save_session(session)
     end
     def find(id:); Elsewhere::Store.find_session(id); end
@@ -28,29 +36,28 @@ module Planning
     module_function
     # Party is a fact about the trip and lives on the session, not a Travel DNA dimension.
     def draft(dream, date_window, _party)
-      budget = dream.to_s[/([0-9][0-9 ]*)\s*(?:₽|руб|rub)/i, 1]
-      budget = budget ? budget.delete(" ").to_i : 180_000
-      elements = [
-        element("total_budget", "hard_constraint", budget * 100, nil, "stated", 1.0),
-        element("trip_length", "hard_constraint", { "min_nights" => 6, "max_nights" => 7 }, nil, "stated", 0.9),
-        element("sea_access", "preference", "high", 0.9, "stated", 0.95),
-        element("climate_warm", "preference", "warm", 0.85, "stated", 0.9),
-        element("quiet", "preference", "high", 0.85, "stated", 0.9),
-        element("food_quality", "preference", "high", 0.75, "stated", 0.85),
-        element("walkability", "preference", "high", 0.8, "inferred", 0.7),
-        element("crowds", "aversion", "low", 0.65, "inferred", 0.65),
-        element("car_free", "hard_constraint", true, nil, "inferred", 0.65),
-        element("dates", "hard_constraint", date_window, nil, "stated", 1.0)
-      ]
-      { "id" => Elsewhere::Store.id, "version" => 1, "elements" => elements, "unmatched_intent" => [] }
+      parsed = DreamParser.parse(dream)
+      elements = parsed.elements.dup
+
+      # Dates become a hard constraint; the party never becomes a dimension, and the contract spec asserts it.
+      elements = elements.reject { |element| element["dimension"] == "dates" } +
+                 [DreamParser.element("dates", date_window, "stated", DreamParser::NAMED)] if date_window
+
+      { "id" => Elsewhere::Store.id, "version" => 1, "elements" => elements,
+        "unmatched_intent" => parsed.unmatched_intent,
+        "_clarifications" => parsed.clarifications, "_degraded" => parsed.degraded,
+        "_degraded_reason" => parsed.degraded_reason }
     end
 
-    def clarifications
-      [{ "id" => "car_free", "dimension" => "car_free", "question" => "Машина точно недопустима или просто не нужна?", "why_it_matters" => "Это влияет на выбор трансфера и локации.", "options" => [{ "value" => true, "label" => "Без машины" }, { "value" => false, "label" => "Можно машину" }] }]
+    INTERNAL_KEYS = %w[_clarifications _degraded _degraded_reason].freeze
+
+    # Internal bookkeeping never crosses the serialization boundary; the conformance spec fails when it does.
+    # Not named `public`: that is Module#public, and shadowing it makes the method private on the singleton.
+    def without_internals(dna)
+      dna.reject { |key, _| INTERNAL_KEYS.include?(key) }
+         .merge("elements" => Array(dna["elements"]).map { |element| element.reject { |key, _| key.start_with?("_") } })
     end
-    def element(dimension, kind, target, weight, provenance, confidence)
-      { "dimension" => dimension, "kind" => kind, "target" => target, "weight" => weight, "tolerance" => nil, "provenance" => provenance, "confidence" => confidence }
-    end
+
     def update(session_id:, elements:)
       session = Sessions.find(id: session_id)
       previous = session["travel_dna"]
