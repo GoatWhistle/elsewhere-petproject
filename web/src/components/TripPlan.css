@@ -1,0 +1,258 @@
+/* The trip plan is a document, not a card: one column, reading measure, sections in trip order. */
+
+.trip-plan {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 40px 44px 36px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--paper);
+}
+
+.trip-plan__header {
+  padding-bottom: 26px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.trip-plan__header h2 {
+  margin: 10px 0 6px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 4vw, 2.9rem);
+  line-height: 1.06;
+}
+
+.trip-plan__summary {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 1.02rem;
+}
+
+.trip-plan .plan-freshness {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.trip-plan .plan-freshness--expired {
+  color: var(--error);
+  font-weight: 680;
+}
+
+.trip-plan__disclaimer {
+  margin: 0;
+  padding: 12px 15px;
+  border-left: 3px solid var(--forest);
+  background: var(--soft-green);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.trip-plan__section {
+  padding: 28px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.trip-plan__section-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.trip-plan__step {
+  color: var(--forest);
+  font-size: 0.73rem;
+  font-weight: 760;
+  letter-spacing: 0.16em;
+}
+
+.trip-plan__section h3 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.42rem;
+}
+
+.trip-plan__note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.trip-plan__legs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trip-plan__legs > li + li { margin-top: 18px; }
+
+.trip-plan__leg {
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.trip-plan__leg h4 {
+  margin: 0 0 12px;
+  font-size: 1.02rem;
+}
+
+.trip-plan__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 2px 24px;
+  margin: 0;
+}
+
+.trip-plan__facts > div {
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.trip-plan__facts dt {
+  color: var(--muted);
+  font-size: 0.71rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trip-plan__facts dd {
+  margin: 4px 0 0;
+  font-weight: 660;
+  line-height: 1.4;
+}
+
+.trip-plan__mobility {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 660;
+}
+
+.trip-plan__costs {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.trip-plan__costs caption {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: left;
+}
+
+.trip-plan__costs th,
+.trip-plan__costs td {
+  padding: 12px 10px 12px 0;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.trip-plan__costs thead th {
+  color: var(--muted);
+  font-size: 0.71rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trip-plan__costs tbody th { font-weight: 400; }
+
+.trip-plan__costs small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.trip-plan__amount-column {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.trip-plan__costs tfoot th,
+.trip-plan__costs tfoot td {
+  padding-top: 16px;
+  border-bottom: none;
+  font-size: 1.02rem;
+}
+
+.trip-plan__costs tfoot td { color: var(--muted); font-size: 0.82rem; }
+
+.trip-plan__costs tfoot strong {
+  color: var(--ink);
+  font-size: 1.5rem;
+}
+
+.trip-plan .basis {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.trip-plan .basis--estimate { color: #245a42; background: #e4f0e5; }
+.trip-plan .basis--modeled { color: #895026; background: #fff0d9; }
+
+.trip-plan__estimate-note {
+  margin: 14px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.trip-plan__reason {
+  margin: 0 0 16px;
+  font-size: 1.05rem;
+}
+
+.trip-plan__tradeoffs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 22px;
+}
+
+.trip-plan__tradeoffs h4 {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.71rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.trip-plan__tradeoffs ul {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.55;
+}
+
+.trip-plan__compromises li { color: var(--terracotta); }
+.trip-plan__compromises li::marker { color: var(--terracotta); }
+
+.trip-plan__link {
+  display: inline-block;
+  margin-top: 14px;
+  color: var(--forest);
+  font-size: 0.86rem;
+  font-weight: 680;
+}
+
+.trip-plan__footer p {
+  margin: 24px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.trip-plan .missing-data {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+@media (width <= 640px) {
+  .trip-plan { padding: 28px 20px 24px; }
+}

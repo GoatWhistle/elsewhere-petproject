@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ElsewhereClient } from "./client";
-import type { DreamInput, PlanningSession } from "./client";
+import type { DreamInput, PlanningSession, TravelDnaElementInput } from "./client";
 
 const input: DreamInput = {
   dream_text: "Неделя спокойствия у моря",
@@ -78,5 +78,31 @@ describe("ElsewhereClient.createPlanningSession", () => {
       status: 502,
       message: "Не удалось выполнить запрос",
     });
+  });
+});
+
+describe("ElsewhereClient.updateTravelDna", () => {
+  it("patches the complete edited element set", async () => {
+    const elements: TravelDnaElementInput[] = [{
+      dimension: "quiet",
+      kind: "preference",
+      target: "very high",
+      weight: 0.9,
+    }];
+    const updatedDna = { ...session.travel_dna, version: 2, elements: [{
+      ...elements[0], provenance: "confirmed" as const, confidence: 1,
+    }] };
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(updatedDna), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(new ElsewhereClient("https://api.example.test").updateTravelDna(session.id, elements))
+      .resolves.toEqual(updatedDna);
+
+    const [url, request] = fetchMock.mock.calls[0];
+    expect(url).toBe(`https://api.example.test/planning-sessions/${session.id}/travel-dna`);
+    expect(request).toMatchObject({ method: "PATCH", body: JSON.stringify({ elements }) });
   });
 });

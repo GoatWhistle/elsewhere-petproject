@@ -1,23 +1,39 @@
-import { useState } from "react";
-import { createSession, generateFutures } from "./api";
-import type { DreamInput, Future, PlanningSession } from "./api";
+import { useCallback, useEffect, useState } from "react";
+import { applyMitigation, createSession, generateFutures, getForecast, simulateFuture, updateTravelDna } from "./api";
+import type { DreamInput, Forecast, Future, Job, PlanningSession, SimulationRequest, TravelDnaElementInput } from "./api";
 import { DreamForm } from "./components/DreamForm";
+import { ForecastPanel } from "./components/ForecastPanel";
+import { FuturesView } from "./components/FuturesView";
+import { SimulatorPanel } from "./components/SimulatorPanel";
+import { TravelDnaPanel } from "./components/TravelDnaPanel";
+import { TripPlan } from "./components/TripPlan";
 import { ApiProblem } from "./generated/client";
 
 export function App() {
   const [session, setSession] = useState<PlanningSession | null>(null);
   const [submittedInput, setSubmittedInput] = useState<DreamInput | null>(null);
   const [futures, setFutures] = useState<Future[]>([]);
+  const [diversityNote, setDiversityNote] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isUpdatingDna, setIsUpdatingDna] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dnaError, setDnaError] = useState<string | null>(null);
+  const [chosen, setChosen] = useState<Future | null>(null);
+  const [forecast, setForecast] = useState<Forecast | null>(null);
+  const [isForecasting, setIsForecasting] = useState(false);
+  const [forecastError, setForecastError] = useState<string | null>(null);
 
   const handleDream = async (input: DreamInput) => {
     setIsSubmitting(true);
     setError(null);
+    setDnaError(null);
     setSession(null);
     setSubmittedInput(null);
     setFutures([]);
+    setDiversityNote(null);
+    setChosen(null);
+    setForecast(null);
 
     try {
       const created = await createSession(input);
@@ -30,6 +46,58 @@ export function App() {
     }
   };
 
+  const handleUpdateDna = async (elements: TravelDnaElementInput[]) => {
+    if (!session) return;
+    setIsUpdatingDna(true);
+    setDnaError(null);
+
+    try {
+      const travelDna = await updateTravelDna(session.id, elements);
+      setSession((current) => current ? { ...current, travel_dna: travelDna } : current);
+    } catch (caught) {
+      setDnaError(errorMessage(caught));
+      throw caught;
+    } finally {
+      setIsUpdatingDna(false);
+    }
+  };
+
+  // The forecast belongs to a specific version of a Future, so it is refetched whenever the chosen version
+  // changes — a simulation produces a new version, and carrying the old risks across would be a lie.
+  useEffect(() => {
+    if (!chosen) return;
+
+    let cancelled = false;
+    setIsForecasting(true);
+    setForecastError(null);
+
+    getForecast(chosen.id)
+      .then((result) => { if (!cancelled) setForecast(result); })
+      .catch((caught) => { if (!cancelled) { setForecast(null); setForecastError(errorMessage(caught)); } })
+      .finally(() => { if (!cancelled) setIsForecasting(false); });
+
+    return () => { cancelled = true; };
+  }, [chosen]);
+
+  const handleSimulate = useCallback(
+    (request: SimulationRequest): Promise<Job> => simulateFuture(chosen!.id, request),
+    [chosen],
+  );
+
+  // A simulation never edits a Future; it produces a new version. The chosen version moves forward, and the
+  // list keeps the original so the user can still see what they came from.
+  const handleSimulated = useCallback((next: Future) => setChosen(next), []);
+
+  const handleFixRisk = useCallback(async (riskId: string, mitigationId: string) => {
+    if (!chosen) return;
+    const job = await applyMitigation(chosen.id, riskId, mitigationId);
+    const mitigated = job.result?.future;
+    if (job.status !== "succeeded" || !mitigated) {
+      throw new ApiProblem(502, { title: "Митигация не применена", status: 502 });
+    }
+    setChosen(mitigated);
+  }, [chosen]);
+
   const handleGenerate = async () => {
     if (!session) return;
     setIsGenerating(true);
@@ -38,6 +106,7 @@ export function App() {
     try {
       const result = await generateFutures(session.id);
       setFutures(result.futures);
+      setDiversityNote(result.diversity_note ?? null);
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -101,11 +170,12 @@ export function App() {
               <div><dt>Путешественники</dt><dd>{submittedInput.party.adults}</dd></div>
             </dl>
 
-            <div className="dna-preview" aria-label="Черновик Travel DNA">
-              {session.travel_dna.elements.slice(0, 8).map((element) => (
-                <span key={element.dimension}>{element.dimension} · {element.provenance}</span>
-              ))}
-            </div>
+            <TravelDnaPanel
+              dna={session.travel_dna}
+              isSaving={isUpdatingDna}
+              error={dnaError}
+              onSave={handleUpdateDna}
+            />
 
             {session.clarifications.length > 0 && (
               <p className="clarification-note">
@@ -126,20 +196,25 @@ export function App() {
       )}
 
       {futures.length > 0 && (
-        <section aria-labelledby="futures-title">
-          <h2 id="futures-title">Возможные будущие</h2>
-          <div className="grid">
-            {futures.map((future) => (
-              <article key={future.id}>
-                <div className="score">{Math.round(future.match.score * 100)}%</div>
-                <h3>{future.destination.name}</h3>
-                <p>{future.why_this_exists}</p>
-                <strong>{formatMoney(future.price.total)}</strong>
-                <small>Перелёт оценён по рынку; проживание и наземные расходы смоделированы.</small>
-              </article>
-            ))}
-          </div>
-        </section>
+        <FuturesView
+          futures={futures}
+          diversityNote={diversityNote}
+          chosenId={chosen?.lineage_id ?? null}
+          onChoose={setChosen}
+        />
+      )}
+
+      {chosen && (
+        <>
+          <SimulatorPanel future={chosen} onSimulate={handleSimulate} onApplyResult={handleSimulated} />
+          <ForecastPanel
+            forecast={forecast}
+            isLoading={isForecasting}
+            error={forecastError}
+            onFixRisk={handleFixRisk}
+          />
+          <TripPlan future={chosen} />
+        </>
       )}
     </main>
   );
@@ -155,9 +230,4 @@ function errorMessage(error: unknown) {
 function formatDate(date: string) {
   return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", year: "numeric" })
     .format(new Date(`${date}T00:00:00`));
-}
-
-function formatMoney(money: { amount_minor: number; currency: string }) {
-  return new Intl.NumberFormat("ru-RU", { style: "currency", currency: money.currency, maximumFractionDigits: 0 })
-    .format(money.amount_minor / 100);
 }
