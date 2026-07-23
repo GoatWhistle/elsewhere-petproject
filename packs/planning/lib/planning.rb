@@ -9,6 +9,7 @@ require_relative "planning/lexicon"
 require_relative "planning/clarifications"
 require_relative "planning/dream_parser"
 require_relative "planning/dna_store"
+require_relative "planning/constraints"
 
 module Planning
   module_function
