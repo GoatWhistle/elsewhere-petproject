@@ -35,17 +35,21 @@ RSpec.describe "Phase 0 walking skeleton", type: :request do
 
     get "/planning-sessions/#{session.fetch("id")}/futures"
     futures = response.parsed_body.fetch("futures")
-    # Two, not three, and the note says why: Sochi is the one destination Ignav really covers, and its fare
-    # comes back in USD while the room rate is modeled in RUB. Summing them needs an exchange rate, and whose
-    # number that is has not been decided — so the candidate is refused rather than invented. When that lands,
-    # this becomes three.
-    expect(futures.size).to eq(2)
-    expect(response.parsed_body.fetch("diversity_note")).to include("разные валюты")
+    # One, not three, and the note accounts for every missing option rather than leaving the set unexplained.
+    # Sochi is the one destination Ignav really covers and its fare comes back in USD while the room rate is
+    # modeled in RUB, so both Sochi candidates are refused rather than summed with an invented exchange rate.
+    # Of what remains, Saint Petersburg sits 0.13 of match below the best — below archetype C's floor — and
+    # padding the set with it would be dishonest. Each of those is a decision this suite is pinning, not an
+    # accident; when the FX question is answered the count changes and this changes with it.
+    expect(futures.size).to eq(1)
+    note = response.parsed_body.fetch("diversity_note")
+    expect(note).to include("разные валюты")
+    expect(note).to include("не дотягивает до порога")
     future = futures.first
     expect(future.dig("logistics", "outbound")).to be_present
     expect(future.dig("match", "contributions")).to be_present
     expect(future.dig("price", "components").find { |component| component["kind"] == "accommodation" }.fetch("fulfilment")).to eq("modeled")
-    expect(FutureVersionRecord.count).to eq(2)
+    expect(FutureVersionRecord.count).to eq(1)
 
     post "/futures/#{future.fetch("id")}/simulations", params: { instruction: "Сделай дешевле" }, as: :json
     expect(response).to have_http_status(:accepted)

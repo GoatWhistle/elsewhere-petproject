@@ -14,6 +14,7 @@ require_relative "planning/curves"
 require_relative "planning/match"
 require_relative "planning/candidates"
 require_relative "planning/assembly"
+require_relative "planning/diversity"
 
 module Planning
   module_function
@@ -118,10 +119,10 @@ module Planning
 
       return no_solution(constraints) if priced.empty?
 
-      chosen = select(priced, dna, session)
-      futures = chosen.map { |assembled, reason| build(session, dna, assembled, reason) }
+      selection = Diversity.select(priced)
+      futures = selection.chosen.map { |assembled, reason| build(session, dna, assembled, reason) }
       futures.each { |future| Elsewhere::Store.save_future(future) }
-      note = diversity_note(futures, refused)
+      note = diversity_note(futures, refused, selection.note)
       session["_diversity_note"] = note
       Elsewhere::Store.save_session(session)
 
@@ -143,26 +144,13 @@ module Planning
     end
 
     # Why the set looks the way it does. Never padded to three, and never silently short either.
-    def diversity_note(futures, refused)
+    def diversity_note(futures, refused, selection_note)
       reasons = refused.map { |item| item["refused"] }.uniq
       return nil if futures.length >= 3 && reasons.empty?
 
-      parts = []
-      parts << "Вариантов #{futures.length}, а не три — добивать похожими мы не будем." if futures.length < 3
+      parts = [selection_note].compact
       parts << "Отброшено направлений: #{refused.length} — #{reasons.first}" if reasons.any?
       parts.join(" ")
-    end
-
-    # Ordered best first; B-5 replaces this with the archetypes.
-    def select(priced, _dna, _session)
-      priced.sort_by { |assembled| Match.ranking_key(assembled["candidate"].match) }
-            .first(3)
-            .map { |assembled| [assembled, why(assembled)] }
-    end
-
-    def why(assembled)
-      best = assembled["candidate"].match["contributions"].max_by { |c| c["contribution"] }
-      best ? "Лучше всего отвечает на «#{best["dimension"]}»" : "Подходит по совокупности"
     end
 
     def months_in(constraints)
