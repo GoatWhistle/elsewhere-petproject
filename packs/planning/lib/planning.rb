@@ -15,6 +15,9 @@ require_relative "planning/match"
 require_relative "planning/candidates"
 require_relative "planning/assembly"
 require_relative "planning/diversity"
+require_relative "planning/instructions"
+require_relative "planning/delta"
+require_relative "planning/simulator_core"
 
 module Planning
   module_function
@@ -174,7 +177,7 @@ module Planning
 
     # `session_id` indexes a Future in the store and is not in the contract, so it is stripped at the
     # serialization boundary; the conformance spec fails when it leaks.
-    INTERNAL_KEYS = %w[session_id].freeze
+    INTERNAL_KEYS = %w[session_id _drag].freeze
     def public(future); future && future.reject { |key, _| INTERNAL_KEYS.include?(key) }; end
 
     def build(session, dna, assembled, reason, parent: nil, version: 1)
@@ -228,19 +231,12 @@ module Planning
 
   module Simulator
     module_function
+
+    # The single entry point for any modification of a Future — sliders, natural language and applied
+    # mitigations all route through here.
     def simulate(future_id:, adjustments: nil, instruction: nil, persist_to_dna: false)
-      original = Futures.find(future_id: future_id)
-      raise "Future not found" unless original
-      changed = Marshal.load(Marshal.dump(original))
-      changed["id"] = Elsewhere::Store.id
-      changed["version"] = original["version"] + 1
-      changed["parent_id"] = original["id"]
-      changed["lineage_id"] = original["lineage_id"]
-      changed["price"]["total"]["amount_minor"] -= 830_000
-      changed["match"]["score"] = (changed["match"]["score"] - 0.02).round(2)
-      changed["delta"] = { "from_future_id" => original["id"], "price_before" => original["price"]["total"], "price_after" => changed["price"]["total"], "price_change" => { "amount_minor" => -830000, "currency" => "RUB" }, "items" => [{ "description" => "Отель дальше от моря → экономия на локации", "amount" => { "amount_minor" => -830000, "currency" => "RUB" }, "relaxed_dimension" => "sea_access" }], "match_before" => original["match"]["score"], "match_after" => changed["match"]["score"], "dimension_changes" => [{ "dimension" => "sea_access", "change" => "worsened" }], "new_risks" => [], "resolved_risks" => [], "explanation" => "Снижена цена за счёт наименее важного компромисса." }
-      Elsewhere::Store.save_future(changed)
-      { "kind" => "future", "future" => Futures.public(changed) }
+      SimulatorCore.simulate(future_id: future_id, adjustments: adjustments, instruction: instruction,
+                             persist_to_dna: persist_to_dna)
     end
   end
 end

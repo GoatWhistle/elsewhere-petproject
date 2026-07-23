@@ -53,9 +53,20 @@ RSpec.describe "Phase 0 walking skeleton", type: :request do
 
     post "/futures/#{future.fetch("id")}/simulations", params: { instruction: "Сделай дешевле" }, as: :json
     expect(response).to have_http_status(:accepted)
-    simulated = response.parsed_body.dig("result", "future")
-    expect(simulated.fetch("parent_id")).to eq(future.fetch("id"))
-    expect(simulated.dig("delta", "items")).to be_present
+    result = response.parsed_body.fetch("result")
+
+    # On this corpus there is nothing cheaper to move to, and the simulator says so instead of handing back a
+    # version identical to its parent. Both branches are walked here because both are real answers.
+    if result.fetch("kind") == "future"
+      simulated = result.fetch("future")
+      expect(simulated.fetch("parent_id")).to eq(future.fetch("id"))
+      expect(simulated.dig("delta", "items").sum { |item| item.dig("amount", "amount_minor") })
+        .to eq(simulated.dig("delta", "price_change", "amount_minor"))
+    else
+      expect(result.fetch("kind")).to eq("no_solution")
+      expect(result.dig("no_solution", "reason")).to be_present
+      expect(result.dig("no_solution", "unsatisfiable_constraints")).to be_present
+    end
     expect(JobRecord.count).to eq(2)
 
     get "/futures/#{future.fetch("id")}/forecast"

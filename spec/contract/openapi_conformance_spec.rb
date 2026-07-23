@@ -49,7 +49,15 @@ RSpec.describe "OpenAPI conformance", type: :request do
     expect(response).to have_http_status(:accepted)
     job = JSON.parse(response.body)
     conform!(job, "Job")
-    conform!(job.dig("result", "future"), "Future")
+
+    # Both outcomes are contract shapes and both are real: on this corpus there is genuinely nothing cheaper,
+    # so the simulator refuses and says why rather than returning a version identical to its parent.
+    result = job.fetch("result")
+    case result.fetch("kind")
+    when "future" then conform!(result.fetch("future"), "Future")
+    when "no_solution" then conform!(result.fetch("no_solution"), "NoSolution")
+    else raise "unexpected simulation result #{result.fetch("kind")}"
+    end
 
     get "/futures/#{future["id"]}/forecast"
     expect(response).to have_http_status(:ok)
