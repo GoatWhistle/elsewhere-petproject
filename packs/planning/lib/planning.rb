@@ -12,6 +12,8 @@ require_relative "planning/dna_store"
 require_relative "planning/constraints"
 require_relative "planning/curves"
 require_relative "planning/match"
+require_relative "planning/candidates"
+require_relative "planning/assembly"
 
 module Planning
   module_function
@@ -99,41 +101,141 @@ module Planning
 
   module Futures
     module_function
-    def now; Time.now.utc.iso8601; end
+
+    def now = Time.now.utc.iso8601
+
+    FARE_BUDGET = 24   # per generation (DEC-028); asserted in the specs, not merely intended
+
     def generate(session_id:)
       session = Sessions.find(id: session_id)
-      choices = [["AER", "prop-sochi-sea", "Море и еда", 9200000], ["AER", "prop-sochi-quiet", "Тишина и прогулки", 7900000], ["MRV", "prop-mrv-mountain", "Горы и спокойствие", 7200000]]
-      futures = choices.map.with_index { |choice, index| build(session, choice, index) }
+      dna = DnaStore.find(session_id) || session["travel_dna"]
+      constraints = Constraints.from(dna, date_window: session["_date_window"], party: session["_party"])
+      months = months_in(constraints)
+      budget = Assembly::Budget.new(fare_requests: [])
+
+      shortlist = Candidates.shortlist(dna, constraints, months: months)
+      priced, refused = assemble_all(shortlist, constraints, session, budget).partition { |a| a["refused"].nil? }
+
+      return no_solution(constraints) if priced.empty?
+
+      chosen = select(priced, dna, session)
+      futures = chosen.map { |assembled, reason| build(session, dna, assembled, reason) }
       futures.each { |future| Elsewhere::Store.save_future(future) }
+      note = diversity_note(futures, refused)
+      session["_diversity_note"] = note
+      Elsewhere::Store.save_session(session)
+
       { "kind" => "futures", "futures" => futures.map { |future| public(future) } }
     end
-    def list(session_id:); Elsewhere::Store.futures_for_session(session_id); end
-    def find(future_id:); Elsewhere::Store.find_future(future_id); end
+
+    def assemble_all(shortlist, constraints, session, budget)
+      fares = {}
+      shortlist.filter_map do |candidate|
+        assembled = Assembly.assemble(candidate, constraints, origin: session.fetch("_origin"),
+                                                              party: session["_party"], fares: fares, budget: budget)
+        next if assembled.nil?
+        next assembled if assembled["refused"]
+        # The final gate: a violation removes a candidate, it never lowers a score.
+        next unless Constraints.violations(assembled, constraints).empty?
+
+        assembled
+      end
+    end
+
+    # Why the set looks the way it does. Never padded to three, and never silently short either.
+    def diversity_note(futures, refused)
+      reasons = refused.map { |item| item["refused"] }.uniq
+      return nil if futures.length >= 3 && reasons.empty?
+
+      parts = []
+      parts << "Вариантов #{futures.length}, а не три — добивать похожими мы не будем." if futures.length < 3
+      parts << "Отброшено направлений: #{refused.length} — #{reasons.first}" if reasons.any?
+      parts.join(" ")
+    end
+
+    # Ordered best first; B-5 replaces this with the archetypes.
+    def select(priced, _dna, _session)
+      priced.sort_by { |assembled| Match.ranking_key(assembled["candidate"].match) }
+            .first(3)
+            .map { |assembled| [assembled, why(assembled)] }
+    end
+
+    def why(assembled)
+      best = assembled["candidate"].match["contributions"].max_by { |c| c["contribution"] }
+      best ? "Лучше всего отвечает на «#{best["dimension"]}»" : "Подходит по совокупности"
+    end
+
+    def months_in(constraints)
+      window = constraints.date_window
+      return [Date.today.month] unless window
+
+      (window[:from]..window[:to]).map(&:month).uniq
+    end
+
+    def no_solution(constraints)
+      rejections = Constraints.destinations(Supply::Catalog.destinations, constraints).rejections
+      { "kind" => "no_solution", "no_solution" => Constraints.no_candidates(rejections, constraints) }
+    end
+
+    # FutureSet: the Futures plus why the set is the shape it is (see provider_adapters.md).
+    def list(session_id:)
+      { "futures" => Elsewhere::Store.futures_for_session(session_id),
+        "diversity_note" => Sessions.find(id: session_id)&.dig("_diversity_note") }
+    end
+    def find(future_id:) = Elsewhere::Store.find_future(future_id)
 
     # `session_id` indexes a Future in the store and is not in the contract, so it is stripped at the
     # serialization boundary; the conformance spec fails when it leaks.
     INTERNAL_KEYS = %w[session_id].freeze
     def public(future); future && future.reject { |key, _| INTERNAL_KEYS.include?(key) }; end
 
-    def build(session, choice, index, parent: nil, version: 1)
-      city, property_id, why, flight_amount = choice
-      property = Supply::Catalog.property(id: property_id)
-      nights = 7
-      rate = Supply::Rates.for(property_id: property_id, check_in: "2026-07-08", check_out: "2026-07-15", adults: 2)
-      transfer = city == "MRV" ? 35000 : 45000
-      mobility = city == "MRV" ? 50000 : 25000
-      accommodation_amount = rate["amount"]["amount_minor"]
-      total = flight_amount + accommodation_amount + transfer + mobility
-      match = [0.94, 0.91, 0.87][index] || 0.86
+    def build(session, dna, assembled, reason, parent: nil, version: 1)
+      candidate = assembled["candidate"]
       id = Elsewhere::Store.id
-      { "id" => id, "session_id" => session["id"], "lineage_id" => parent ? parent["lineage_id"] : id, "version" => version, "travel_dna_version_id" => session["travel_dna"]["id"], "parent_id" => parent && parent["id"], "created_at" => now, "expires_at" => (Time.now + 3600).utc.iso8601, "destination" => destination(city), "check_in" => "2026-07-08", "check_out" => "2026-07-15", "accommodation" => accommodation(property, rate), "logistics" => logistics(session.fetch("_origin"), city, flight_amount), "price" => price(total, flight_amount, accommodation_amount, transfer, mobility), "match" => match(match, session["travel_dna"]), "why_this_exists" => why, "benefits" => [why], "compromises" => index == 0 ? ["Больше людей в сезон"] : ["Часть поездок потребует транспорта"], "delta" => nil, "forecast_summary" => [] }
+      {
+        "id" => id, "session_id" => session["id"],
+        "lineage_id" => parent ? parent["lineage_id"] : id, "version" => version,
+        "travel_dna_version_id" => dna["id"], "parent_id" => parent && parent["id"],
+        "created_at" => now, "expires_at" => (Time.now + 3600).utc.iso8601,
+        "destination" => destination_of(candidate),
+        "check_in" => assembled["check_in"], "check_out" => assembled["check_out"],
+        "accommodation" => accommodation(candidate, assembled["rate"]),
+        "logistics" => assembled["logistics"], "price" => assembled["price"],
+        "match" => candidate.match, "why_this_exists" => reason,
+        "benefits" => benefits(candidate), "compromises" => compromises(candidate),
+        "delta" => nil, "forecast_summary" => []
+      }
     end
-    def destination(city); d = Supply::Catalog.destination(city_code: city); { "city_code" => d.city_code, "name" => d.name, "country" => d.country, "coordinates" => d.coordinates }; end
-    def accommodation(property, rate); { "catalogue_id" => property.catalogue_id, "name" => property.name, "room_name" => "Стандартный номер", "handoff_url" => rate["handoff_url"], "coordinates" => property.coordinates, "cancellation" => { "refundable" => true, "free_until" => nil, "summary" => "Бесплатная отмена до заезда" }, "distance_to_sea_m" => Supply::Geo.features(property_id: property.catalogue_id)["distance_to_sea_m"], "distance_to_centre_m" => Supply::Geo.features(property_id: property.catalogue_id)["distance_to_centre_m"] }; end
-    def logistics(origin, city, amount); { "outbound" => leg(origin, city, amount), "inbound" => leg(city, origin, amount), "airport_transfer" => { "mode" => "shared", "duration_min" => 35, "note" => "Моделируем shared transfer" }, "local_mobility" => { "assumption" => "Основное — пешком, две поездки на такси", "walkable" => true } }; end
-    def leg(origin, destination, amount); { "origin" => origin, "destination" => destination, "depart_at" => "2026-07-08T09:00:00Z", "arrive_at" => "2026-07-08T12:00:00Z", "carrier" => "Fixture Air", "stops" => 0, "duration_min" => 180, "as_of" => now, "booking_url" => "https://example.invalid/flights" }; end
-    def price(total, flight, accommodation, transfer, mobility); { "total" => { "amount_minor" => total, "currency" => "RUB" }, "components" => [{ "kind" => "travel", "amount" => { "amount_minor" => flight, "currency" => "RUB" }, "fulfilment" => "estimate", "source" => "Ignav fixture", "handoff_url" => "https://example.invalid/flights", "as_of" => now }, { "kind" => "accommodation", "amount" => { "amount_minor" => accommodation, "currency" => "RUB" }, "fulfilment" => "modeled", "source" => "harvest calibration", "handoff_url" => nil, "as_of" => nil }, { "kind" => "transfer", "amount" => { "amount_minor" => transfer, "currency" => "RUB" }, "fulfilment" => "modeled", "source" => "shared transfer model", "handoff_url" => nil, "as_of" => nil }, { "kind" => "local_mobility", "amount" => { "amount_minor" => mobility, "currency" => "RUB" }, "fulfilment" => "modeled", "source" => "mobility assumption", "handoff_url" => nil, "as_of" => nil }] }; end
-    def match(score, dna); { "score" => score, "coverage" => 0.85, "confidence" => 0.82, "contributions" => dna["elements"].select { |e| e["weight"] }.map { |e| { "dimension" => e["dimension"], "satisfaction" => score, "weight" => e["weight"], "contribution" => (score * e["weight"]).round(4), "confidence" => e["confidence"], "explanation" => "Рассчитано по данным fixture" } }, "unscored_dimensions" => [{ "dimension" => "food_quality", "reason" => "Нет отзывов в текущем источнике" }] }; end
+
+    def destination_of(candidate)
+      d = candidate.destination
+      { "city_code" => d.city_code, "name" => d.name, "country" => d.country, "coordinates" => d.coordinates }
+    end
+
+    def accommodation(candidate, rate)
+      geo = Supply::Geo.features(property_id: candidate.property.catalogue_id) || {}
+      {
+        "catalogue_id" => candidate.property.catalogue_id, "name" => candidate.property.name,
+        "room_name" => "Стандартный номер", "handoff_url" => rate["handoff_url"],
+        "coordinates" => candidate.property.coordinates,
+        "cancellation" => { "refundable" => true, "free_until" => nil,
+                            "summary" => "Условия отмены не публикуются источником" },
+        "distance_to_sea_m" => geo["distance_to_sea_m"], "distance_to_centre_m" => geo["distance_to_centre_m"]
+      }
+    end
+
+    # Straight off the decomposition: what this candidate is good at, and where it pays for it.
+    def benefits(candidate)
+      candidate.match["contributions"].select { |c| c["satisfaction"] >= 0.75 }
+               .sort_by { |c| -c["contribution"] }.first(3).map { |c| c["explanation"] }
+    end
+
+    def compromises(candidate)
+      weak = candidate.match["contributions"].select { |c| c["satisfaction"] < 0.5 }
+                      .sort_by { |c| c["satisfaction"] }.first(2).map { |c| c["explanation"] }
+      gaps = candidate.match["unscored_dimensions"].map { |u| u["reason"] }
+      (weak + gaps).first(3)
+    end
   end
 
   module Simulator

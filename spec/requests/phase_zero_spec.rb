@@ -35,12 +35,17 @@ RSpec.describe "Phase 0 walking skeleton", type: :request do
 
     get "/planning-sessions/#{session.fetch("id")}/futures"
     futures = response.parsed_body.fetch("futures")
-    expect(futures.size).to eq(3)
+    # Two, not three, and the note says why: Sochi is the one destination Ignav really covers, and its fare
+    # comes back in USD while the room rate is modeled in RUB. Summing them needs an exchange rate, and whose
+    # number that is has not been decided — so the candidate is refused rather than invented. When that lands,
+    # this becomes three.
+    expect(futures.size).to eq(2)
+    expect(response.parsed_body.fetch("diversity_note")).to include("разные валюты")
     future = futures.first
     expect(future.dig("logistics", "outbound")).to be_present
     expect(future.dig("match", "contributions")).to be_present
     expect(future.dig("price", "components").find { |component| component["kind"] == "accommodation" }.fetch("fulfilment")).to eq("modeled")
-    expect(FutureVersionRecord.count).to eq(3)
+    expect(FutureVersionRecord.count).to eq(2)
 
     post "/futures/#{future.fetch("id")}/simulations", params: { instruction: "Сделай дешевле" }, as: :json
     expect(response).to have_http_status(:accepted)

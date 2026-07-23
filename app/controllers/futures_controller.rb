@@ -6,7 +6,9 @@ class FuturesController < ApplicationController
   end
 
   def index
-    render json: { futures: Planning::Futures.list(session_id: params[:id]).map { |future| Planning::Futures.public(future) }, diversity_note: nil }
+    set = Planning::Futures.list(session_id: params[:id])
+    render json: { futures: set.fetch("futures").map { |future| Planning::Futures.public(future) },
+                   diversity_note: set["diversity_note"] }
   end
 
   def show
