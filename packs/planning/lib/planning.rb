@@ -10,6 +10,8 @@ require_relative "planning/clarifications"
 require_relative "planning/dream_parser"
 require_relative "planning/dna_store"
 require_relative "planning/constraints"
+require_relative "planning/curves"
+require_relative "planning/match"
 
 module Planning
   module_function
