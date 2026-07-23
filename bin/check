@@ -11,6 +11,10 @@ if ruby -e 'exit(Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.3") ? 0 :
   ruby_run=""
 else
   if docker compose version >/dev/null 2>&1; then compose="docker compose"; else compose="docker-compose"; fi
+  # Compose names the project after the directory, so running this from a git worktree would build a second
+  # stack from scratch — image, database, the lot — instead of reusing the warm one. Pin the name to the
+  # repository rather than to whichever checkout happens to be calling.
+  export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-elsewhere-petproject}"
   ruby_run="$compose run --rm -e RAILS_ENV=test app"
 fi
 
