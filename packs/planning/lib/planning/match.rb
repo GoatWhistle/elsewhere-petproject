@@ -36,22 +36,25 @@ module Planning
 
       total_weight = elements.sum { |element| element["weight"].to_f }
       scored_weight = scored.sum { |entry| entry[:weight] }
+      contributions = scored.map { |entry| contribution(entry) }
 
       {
-        "score" => overall(scored, scored_weight),
+        # From the published contributions, not unrounded intermediates: the decomposition must add up to its
+        # own total.
+        "score" => overall(contributions),
         "coverage" => total_weight.zero? ? 0.0 : (scored_weight / total_weight).round(4),
         "confidence" => confidence(scored, scored_weight, total_weight),
-        "contributions" => scored.map { |entry| contribution(entry) },
+        "contributions" => contributions,
         "unscored_dimensions" => unscored.map { |entry| { "dimension" => entry[:dimension], "reason" => entry[:reason] } }
       }
     end
 
     # Σ(w×s)/Σ(w). An aversion contributes −w..+w, not 0..w: a violated aversion must pull the score down.
-    def overall(scored, scored_weight)
-      return 0.0 if scored_weight.zero?
+    def overall(contributions)
+      weight = contributions.sum { |c| c["weight"] }
+      return 0.0 if weight.zero?
 
-      total = scored.sum { |entry| signed_contribution(entry) }
-      (total / scored_weight).clamp(0.0, 1.0).round(4)
+      (contributions.sum { |c| c["contribution"] } / weight).clamp(0.0, 1.0).round(4)
     end
 
     def signed_contribution(entry)

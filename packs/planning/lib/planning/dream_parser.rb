@@ -59,7 +59,8 @@ module Planning
 
       stated = stated_elements(answer)
       inferred = inferred_elements(stated)
-      ordered = rank(stated, inferred, answer["ranking"])
+      ordered = rank(stated, inferred, answer["ranking"] ) + defaults(stated + inferred)
+      ordered = rank(ordered.uniq { |element| element["dimension"] }, [], answer["ranking"])
 
       Result.new(
         elements: ordered, unmatched_intent: Array(answer["unmatched"]).uniq,
@@ -110,6 +111,16 @@ module Planning
 
       scored.each_with_index { |element, index| element["weight"] = LADDER[index] || LADDER_FLOOR }
       (sorted + inferred).map { |element| element.merge("weight" => Taxonomy.hard?(element["dimension"]) ? nil : element["weight"]) }
+    end
+
+    # A Dream can name only a budget, or only something unmeasurable, leaving nothing to choose by. The
+    # taxonomy's defaults are added at default confidence and marked `default`, so the user sees whose they are.
+    DEFAULTS = %w[comfort food_quality walkability].freeze
+
+    def defaults(elements)
+      return [] if elements.any? { |element| Taxonomy.measurable?(element["dimension"]) }
+
+      DEFAULTS.map { |dimension| element(dimension, nil, "default", TAXONOMY_DEFAULT) }
     end
 
     def element(dimension, target, provenance, confidence, derived_from: nil)

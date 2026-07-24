@@ -22,6 +22,11 @@ module Planning
     # Only these five may be hard; make "quiet" hard and the result set is empty.
     HARD = %w[total_budget trip_length dates party car_free].freeze
 
+    # What this build can put a number against. `crowds` needs seasonality and popularity, `nightlife` needs a
+    # bar layer, and Supply publishes neither, so a Dream of only those two is understood but not scored.
+    # Stated here because the parser must know it is leaving the traveller nothing to choose by.
+    UNMEASURABLE = %w[crowds nightlife].freeze
+
     module_function
 
     def all = FAMILIES.keys
@@ -29,6 +34,7 @@ module Planning
     def kind(dimension) = KINDS[dimension]
     def hard?(dimension) = FAMILIES[dimension] == :hard
     def scored?(dimension) = !hard?(dimension)
+    def measurable?(dimension) = scored?(dimension) && !UNMEASURABLE.include?(dimension)
     def known?(dimension) = FAMILIES.key?(dimension)
   end
 end
