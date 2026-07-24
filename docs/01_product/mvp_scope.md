@@ -28,63 +28,60 @@
 
 | Возможность | Уровень | Замечания |
 |---|---|---|
-| Dream input (free text + minimal structured fields) | REAL | Origin and dates are unavoidable inputs — OQ-I |
-| Travel DNA extraction | REAL | Thesis 2 — cannot be faked |
-| Travel DNA visible and editable | REAL | Cheap, and it is the product's honesty made visible |
-| Futures generation with explicit diversity | REAL | Thesis 3 — hardest and most important |
-| Experience Match, deterministic + decomposable | REAL | Thesis 5 needs it diffable |
-| Simulator: 3 sliders + free-text request | REAL | Thesis 4–5 |
-| Explained deltas | REAL | The most differentiating output in the product |
-| Experience Forecast, 2–3 risk types with real evidence | REAL (narrow) | Geo and climate evidence only — C-05 |
-| Property catalogue (real properties, coordinates, ratings) | REAL — harvested once | DEC-016 |
-| Room price for dates | **MODELED** — calibrated on observed levels | DEC-016; the only synthetic number |
-| Flight fare | REAL, live | Ignav |
-| Geo features, climate | REAL | OSM/PostGIS, Open-Meteo |
-| Trip plan (logistics + estimated total) | REAL | DEC-018 — nothing booked, no money |
-| Day-by-day programme (sights, food, routes) | OUT | Different mechanic; would dilute the one that matters |
-| Payment | OUT — we never touch money | DEC-017 |
-| Reviews / review sentiment | OUT — no source exists | DEC-016 |
-| Transfer + local mobility | MODELED, stated as assumptions | DEC-018 |
-| User accounts | OUT | Nothing to return to — there is no order (DEC-017) |
-| Multi-currency | OUT — RUB only | DEC-007 |
-| Families / groups / accessibility | OUT | See [target_users.md](target_users.md) |
-| Sharing a Future with a companion | OUT (POST-MVP) | Obvious next step, not thesis-critical |
-| Living Trip (post-booking monitoring) | **OUT** — [DEC-015](../00_project/decision_log.md) | Lead's decision |
+| Ввод Мечты (свободный текст плюс минимум структурированных полей) | REAL | Город вылета и даты — неизбежные входы, OQ-I |
+| Извлечение Travel DNA | REAL | Тезис 2 — подделать нельзя |
+| Travel DNA видима и редактируема | REAL | Дёшево, и это честность продукта, сделанная видимой |
+| Генерация Futures с явным разнообразием | REAL | Тезис 3 — самое трудное и самое важное |
+| Совпадение, детерминированное и раскладываемое | REAL | Для тезиса 5 нужна сравнимость версий |
+| Симулятор: три ползунка и свободный текст | REAL | Тезисы 4–5 |
+| Объяснённые дельты | REAL | Самый отличающий результат в продукте |
+| Прогноз, два-три типа риска с настоящими доказательствами | REAL (узко) | Только география и климат — C-05 |
+| Каталог объектов (реальные объекты, координаты, рейтинги) | REAL — собран разово | DEC-016 |
+| Цена номера на даты | **МОДЕЛЬ** — наблюдаемая база × модельная сезонность | DEC-029; единственное синтетическое число |
+| Авиатариф | REAL, живой | Ignav |
+| Географические признаки, климат | REAL | OSM и PostGIS, Open-Meteo |
+| План поездки (логистика и оценка итога) | REAL | DEC-018 — ничего не бронируется, денег нет |
+| Программа по дням (что посмотреть, где поесть, маршруты) | ВНЕ | Другая механика; размыла бы главную |
+| Оплата | ВНЕ — мы не касаемся денег | DEC-017 |
+| Отзывы и тональность отзывов | ВНЕ — источника нет | DEC-016 |
+| Трансфер и локальная мобильность | МОДЕЛЬ, заявлены как допущения | DEC-018 |
+| Аккаунты | ВНЕ | Возвращаться не к чему — заказа нет (DEC-017) |
+| Мультивалютность | ВНЕ — только рубли | DEC-007 |
+| Семьи, группы, доступность | ВНЕ | См. [target_users.md](target_users.md) |
+| Поделиться Future со спутником | ВНЕ (после MVP) | Очевидный следующий шаг, для тезиса не критичен |
+| Living Trip (наблюдение после бронирования) | **ВНЕ** — [DEC-015](../00_project/decision_log.md) | |
 
-Note the one item that moved *into* scope: minimal identity. It was not required when booking was hypothetical;
-it becomes required the moment a user leaves for a payment page and needs to come back to their order.
+## Порядок работ
 
-## Sequencing for five parallel builders
+Сначала последовательно — вокруг этого распараллелиться нельзя:
 
-Serial first (nobody can parallelise around these):
+1. Интерфейс Supply вместе с собранным корпусом и моделью цены (DEC-016).
+2. Основные схемы: Travel DNA, Future, вход и выход оценки, пункт прогноза (DEC-008).
+3. Набор направлений, который реально покрывает корпус.
 
-1. Supply interface plus the harvested corpus and the price model (DEC-016).
-2. The core schemas: Travel DNA, Future, scoring input/output, forecast item (DEC-008).
-3. The destination set the corpus actually covers.
+Затем параллельно:
 
-Then, in parallel:
+- разбор Мечты → Travel DNA;
+- генерация Futures, разнообразие и Совпадение;
+- симулятор и объяснение дельт;
+- прогноз (извлечение доказательств → пункты риска);
+- фронтенд.
 
-- Dream parsing → Travel DNA
-- Futures generation + diversity + Experience Match
-- Simulator + delta explanation
-- Forecast (evidence extraction → risk items)
+Сценарий демонстрации пишется рано, а не последним: он приёмочный тест для всего перечисленного.
 
-- Front end
+## Что обязано быть настоящим, чтобы демонстрация что-то значила
 
-The demo scenario should be written early, not last — it is the acceptance test for all of the above.
+Если подделать это, демонстрация не доказывает ничего:
 
-## What must be REAL for the demo to mean anything
+- извлечение Travel DNA из свободного текста;
+- разнообразие Futures;
+- разложение Совпадения;
+- арифметика дельт симулятора;
+- цепочка доказательств прогноза — риск обязан прослеживаться до настоящего измерения с настоящей датой.
 
-If these are faked, the demo proves nothing:
+Складские остатки и бронирование могут работать против засеянного адаптера, не повреждая тезис, **при условии,
+что мы об этом говорим**.
 
-- Travel DNA extraction from free text;
-- Futures diversity;
-- Experience Match decomposition;
-- the simulator's delta arithmetic;
-- the forecast's evidence chain — a risk must trace to a real review with a real date.
+## Всё ещё открыто
 
-Inventory and booking may run against the seeded adapter without damaging the thesis, **provided we say so**.
-
-## Still open
-
-Which destinations the harvested corpus covers, and how the room-rate model is calibrated.
+Какие направления покрывает собранный корпус и как калибруется модель цены номера.

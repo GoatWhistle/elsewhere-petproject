@@ -330,12 +330,12 @@ C — другой тип географии, требуется совпаде�
 
 **Принято.** Шесть строк, в *начале* демонстрации:
 
-1. the nightly rate is **modeled**, calibrated on observed price levels for that property;
-2. the fares are **real and live**, with a timestamp;
-3. transfer and local mobility are **stated assumptions**;
-4. there are **no reviews at all** — the forecast is geography and climate, and the noise risk is a road proxy;
-5. we **book nothing and take no money**; the output is a plan;
-6. the corpus is **N curated destinations**, not the world.
+1. цена за ночь **модельная** — наблюдаемый базовый уровень этого объекта и сезонность, которую мы не наблюдали;
+2. тарифы **настоящие и живые**, с отметкой времени;
+3. трансфер и локальная мобильность — **заявленные допущения**;
+4. отзывов **нет вообще** — прогноз это география и климат, а риск шума — заменитель через дорогу;
+5. мы **ничего не бронируем и не берём денег**; результат — план;
+6. корпус — **N курируемых направлений**, а не весь мир.
 
 Сказанное первым, это читается как инженерная честность. Сказанное после вопроса из зала, ровно то же самое
 читается как оправдание. В этом всё обоснование.
