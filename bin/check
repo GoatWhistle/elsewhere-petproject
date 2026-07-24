@@ -25,6 +25,9 @@ echo "→ rspec"
 if [ -z "$ruby_run" ]; then RAILS_ENV=test bundle exec rspec; else $ruby_run bundle exec rspec; fi
 
 echo "→ frontend"
+# node_modules is per-checkout and gitignored, so a fresh clone or a git worktree has none. Installing here
+# beats failing with "tsc: command not found", which says nothing about what is actually wrong.
+[ -d web/node_modules ] || npm ci --prefix web
 npm run check --prefix web
 npm run lint --prefix web
 
