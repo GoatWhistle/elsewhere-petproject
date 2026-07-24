@@ -1,9 +1,9 @@
 #!/bin/sh
 # Prints the timestamp the next commit should carry.
 #
-# The project history runs on a fixed retroactive window: 2026-07-16 to 2026-08-05. Four pools committing in
-# parallel would otherwise produce either identical timestamps or dates outside it, so this advances 3–9 hours
-# past the branch's newest commit and clamps to the window.
+# The project history runs on a fixed retroactive window: 2026-07-01 to 2026-08-05. Left alone, commits would
+# carry either today's real date or a pile-up of identical timestamps, so this advances 3–9 hours past the
+# newest commit and clamps to the window. The hooks enforce the same bounds.
 #
 #   eval "$(bin/commit_date --export)" && git commit
 #
