@@ -9,7 +9,9 @@ cd "$(git rev-parse --show-toplevel)"
 
 [ -n "$ELSEWHERE_DATE_FIX" ] && exit 0
 git_dir=$(git rev-parse --git-dir)
-for state in rebase-merge rebase-apply MERGE_HEAD CHERRY_PICK_HEAD BISECT_LOG; do
+# MERGE_HEAD is deliberately absent from this list: it is still present when post-commit runs for a merge
+# commit, so guarding on it let every merge escape the window. Only genuinely mid-sequence states are skipped.
+for state in rebase-merge rebase-apply CHERRY_PICK_HEAD BISECT_LOG; do
   [ -e "$git_dir/$state" ] && exit 0
 done
 
