@@ -15,7 +15,7 @@ module Supply
   # drifting on its own.
   module RateModel
     # Bump when the formula changes: old calibrations stay readable and every Rate names the one that made it.
-    VERSION = "seasonal-v1".freeze
+    VERSION = "seasonal-v2".freeze
 
     # The bounds DEC-029 asks for. A factor cannot leave them whatever the inputs do.
     FACTOR_MIN = 0.70
@@ -30,6 +30,10 @@ module Supply
     # current corpus would rescore every existing Future as the corpus grew.
     POPULARITY_HALF_SATURATION = 300.0
 
+    # A 25 °C annual swing reaches the maximum climate contribution; a place with stable weather cannot reach
+    # the seasonal range of one whose climate actually moves.
+    SEASONAL_RANGE_REFERENCE_C = 25.0
+
     module_function
 
     # Builds one calibration row per destination and month. Cheap and local — climate normals are already stored.
@@ -43,9 +47,10 @@ module Supply
           next
         end
 
-        popularity = popularity_for(destination)
-        amplitude = AMPLITUDE_MIN + (AMPLITUDE_MAX - AMPLITUDE_MIN) * popularity
         temperatures = normals.map { |normal| normal.temp_mean_c.to_f }
+        popularity = popularity_for(destination)
+        seasonal_swing = seasonal_swing(temperatures)
+        amplitude = amplitude_for(popularity: popularity, seasonal_swing: seasonal_swing)
 
         normals.each do |normal|
           comfort = comfort_for(normal, temperatures, destination.peak_season)
@@ -61,6 +66,7 @@ module Supply
               "temp_mean_c" => normal.temp_mean_c.to_f, "sea_temp_c" => normal.sea_temp_c&.to_f,
               "peak_season" => destination.peak_season, "reviews_per_property" => reviews_per_property(destination),
               "annual_temp_range_c" => [temperatures.min, temperatures.max],
+              "seasonal_swing" => seasonal_swing.round(3),
               "basis" => "the base is observed; this seasonality is modeled"
             },
             computed_at: Time.now.utc
@@ -105,6 +111,14 @@ module Supply
       return 0.0 if reviews.nil?
 
       reviews / (reviews + POPULARITY_HALF_SATURATION)
+    end
+
+    def seasonal_swing(temperatures)
+      ((temperatures.max.to_f - temperatures.min.to_f) / SEASONAL_RANGE_REFERENCE_C).clamp(0.0, 1.0)
+    end
+
+    def amplitude_for(popularity:, seasonal_swing:)
+      AMPLITUDE_MIN + (AMPLITUDE_MAX - AMPLITUDE_MIN) * popularity.to_f * seasonal_swing.to_f
     end
 
     def reviews_per_property(destination)

@@ -36,6 +36,15 @@ RSpec.describe Supply::RateModel do
       expect(row["inputs"]).to include("temp_mean_c", "peak_season", "reviews_per_property")
       expect(row["inputs"]["basis"]).to eq("the base is observed; this seasonality is modeled")
     end
+
+    it "gives a larger climate swing a larger seasonal amplitude" do
+      quiet_climate = described_class.amplitude_for(popularity: 1.0, seasonal_swing: 3.0 / 25.0)
+      variable_climate = described_class.amplitude_for(popularity: 1.0, seasonal_swing: 25.0 / 25.0)
+
+      expect(quiet_climate).to be > described_class::AMPLITUDE_MIN
+      expect(variable_climate).to be > quiet_climate
+      expect(variable_climate).to be_within(0.0001).of(described_class::AMPLITUDE_MAX)
+    end
   end
 
   describe "the rate" do
