@@ -32,7 +32,7 @@ module Foresight
         "future_id" => future_id,
         "generated_at" => Time.now.utc.iso8601,
         "risks" => risks(future, evidence, dna),
-        "coverage" => coverage(evidence)
+        "coverage" => coverage(evidence, dna: dna)
       }
     end
 
@@ -59,11 +59,16 @@ module Foresight
 
     # Every risk type says whether it was assessed and why not, in the words of whatever refused to answer.
     # Four can only be evidenced by review text, so they always carry Supply's reason for having none.
-    def coverage(evidence)
+    DNA_UNRESOLVED_REASON = "Travel DNA could not be resolved; relevance filtering was not applied".freeze
+
+    def coverage(evidence, dna: nil)
       ALL_RISK_TYPES.map do |risk_type|
         assessed = evidence.available?(risk_type)
         entry = { "risk_type" => risk_type, "assessed" => assessed }
-        entry["reason"] = evidence.unavailable_reason(risk_type) unless assessed
+        reasons = []
+        reasons << evidence.unavailable_reason(risk_type) unless assessed
+        reasons << DNA_UNRESOLVED_REASON unless dna
+        entry["reason"] = reasons.join("; ") if reasons.any?
         entry
       end
     end

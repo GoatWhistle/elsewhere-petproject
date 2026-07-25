@@ -58,6 +58,12 @@ RSpec.describe "Foresight relevance filtering" do
     expect(forecast["coverage"].reject { |entry| entry["assessed"] }).to all(include("reason"))
   end
 
+  it "reports when relevance filtering could not run because the DNA was unresolved" do
+    forecast = forecast_for(nil)
+
+    expect(forecast["coverage"]).to all(include("reason" => a_string_including("relevance filtering was not applied")))
+  end
+
   describe "what counts as caring about something" do
     it "pins relevance to Planning's normalized weight scale" do
       scale = Planning::Taxonomy::WEIGHT_SCALE
