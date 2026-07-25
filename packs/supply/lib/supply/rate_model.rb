@@ -44,12 +44,13 @@ module Supply
         end
 
         temperatures = normals.map { |normal| normal.temp_mean_c.to_f }
+        sea_temperatures = sea_temperatures_for(destination.city_code)
         popularity = popularity_for(destination)
         seasonal_swing = seasonal_swing(temperatures)
         amplitude = amplitude_for(popularity: popularity, seasonal_swing: seasonal_swing)
 
         normals.each do |normal|
-          comfort = comfort_for(normal, temperatures, destination.peak_season)
+          comfort = comfort_for(normal, temperatures, destination.peak_season, sea_temperatures: sea_temperatures)
           factor = clamp(1 + amplitude * ((comfort * 2) - 1))
 
           record = PriceCalibrationRecord.find_or_initialize_by(
@@ -77,23 +78,27 @@ module Supply
 
     # How much this month suits this destination, 0 to 1. Read against the destination's own annual range, and
     # directed by the declared `peak_season`: for a ski resort the comfortable month is the cold one.
-    def comfort_for(normal, temperatures, peak_season)
+    def comfort_for(normal, temperatures, peak_season, sea_temperatures: nil)
       low, high = temperatures.minmax
       return 0.5 if (high - low).abs < 0.01
 
       warmth = (normal.temp_mean_c.to_f - low) / (high - low)
       # A sea destination sells the water, not the air, so the sea leads where we have measured it.
       if normal.sea_temp_c
-        sea = sea_warmth(normal, temperatures)
+        sea = sea_warmth(normal, sea_temperatures)
         warmth = (0.4 * warmth) + (0.6 * sea) if sea
       end
 
       peak_season == "cold" ? 1 - warmth : warmth
     end
 
-    def sea_warmth(normal, _temperatures)
-      series = DestinationClimateNormalRecord.where(city_code: normal.city_code)
-                                             .where.not(sea_temp_c: nil).pluck(:sea_temp_c).map(&:to_f)
+    def sea_temperatures_for(city_code)
+      DestinationClimateNormalRecord.where(city_code: city_code)
+                                     .where.not(sea_temp_c: nil).pluck(:sea_temp_c).map(&:to_f)
+    end
+
+    def sea_warmth(normal, series = nil)
+      series ||= sea_temperatures_for(normal.city_code)
       return nil if series.length < 2
 
       low, high = series.minmax

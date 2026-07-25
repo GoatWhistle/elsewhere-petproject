@@ -92,6 +92,17 @@ RSpec.describe Supply::RateModel do
       expect(first).to eq(second)
     end
 
+    it "reads the sea-temperature series once per destination during calibration" do
+      12.times do |month|
+        DestinationClimateNormalRecord.create!(destination: destination, city_code: "AER", month: month + 1,
+                                                temp_mean_c: 10 + month, sea_temp_c: 18 + month,
+                                                source: "spec", computed_at: Time.current)
+      end
+      expect(described_class).to receive(:sea_temperatures_for).with("AER").once.and_call_original
+
+      described_class.calibrate!(city_codes: ["AER"])
+    end
+
     it "prices a stay that crosses a month one night at a time, not wholesale" do
       rate = described_class.for(property_id: "101hotels:1", check_in: "2026-08-30", check_out: "2026-09-02")
 
