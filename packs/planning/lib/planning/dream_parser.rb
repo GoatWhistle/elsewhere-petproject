@@ -7,7 +7,7 @@ module Planning
   # A model asked to rate importance 0–1 drifts between runs; asked to rank, it gives something deterministic.
   module DreamParser
     # Weight by position, not opinion: stated dimensions take the top rungs before any inferred one.
-    LADDER = [1.0, 0.9, 0.8, 0.7, 0.6, 0.55, 0.5, 0.45, 0.4].freeze
+    LADDER = [Taxonomy::WEIGHT_SCALE.end, 0.9, 0.8, 0.7, 0.6, 0.55, 0.5, 0.45, 0.4].freeze
     LADDER_FLOOR = 0.35
 
     # Confidence comes from the extraction path alone; the model is never asked how certain it is.

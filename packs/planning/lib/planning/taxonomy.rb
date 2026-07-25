@@ -2,6 +2,9 @@ module Planning
   # The closed vocabulary the engine speaks (DEC-024). Fixed on purpose: a fixed set is scoreable and
   # explainable, and anything outside it goes to `unmatched_intent` where the user can see it.
   module Taxonomy
+    # The scale every soft-preference weight is normalized to; consumers read this rather than assume a range.
+    WEIGHT_SCALE = (0.0..1.0).freeze
+
     # `more_is_better` — the user wants as much as they can get.
     # `target`        — the user wants a *level*, and overshooting is as wrong as undershooting.
     # `hard`          — disqualifies rather than scores; no curve at all.

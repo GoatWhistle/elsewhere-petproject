@@ -59,6 +59,15 @@ RSpec.describe "Foresight relevance filtering" do
   end
 
   describe "what counts as caring about something" do
+    it "pins relevance to Planning's normalized weight scale" do
+      scale = Planning::Taxonomy::WEIGHT_SCALE
+
+      expect(Planning::DreamParser::LADDER).to all(be_between(scale.begin, scale.end))
+      expect(Planning::DreamParser::LADDER_FLOOR).to be_between(scale.begin, scale.end)
+      expect(Foresight::Relevance::RELEVANT_WEIGHT)
+        .to eq(scale.begin + (scale.end - scale.begin) / 2.0)
+    end
+
     let(:dna) do
       { "elements" => [
         { "dimension" => "quiet", "kind" => "preference", "weight" => 0.9 },

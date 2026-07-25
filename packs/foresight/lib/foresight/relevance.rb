@@ -4,7 +4,8 @@ module Foresight
   module Relevance
     # A weight at or above this is something the traveller cares about. Weights come from a ranking, so
     # half-way up the scale is the natural line — a constant, not the top N of this particular DNA.
-    RELEVANT_WEIGHT = 0.5
+    RELEVANT_WEIGHT = Planning::Taxonomy::WEIGHT_SCALE.begin +
+                      (Planning::Taxonomy::WEIGHT_SCALE.end - Planning::Taxonomy::WEIGHT_SCALE.begin) / 2.0
 
     module_function
 
