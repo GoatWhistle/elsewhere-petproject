@@ -27,6 +27,13 @@ RSpec.describe Planning::DnaStore do
       expect(stored["car_free"]["target"]).to be(true)
       expect(stored["quiet"]["weight"]).to be_a(Float)
     end
+
+    it "publishes lookup by Travel DNA version id" do
+      version_id = session.fetch("travel_dna").fetch("id")
+
+      expect(Planning::TravelDna.find(version_id: version_id)).to eq(described_class.find(session_id))
+      expect(Planning::TravelDna.find(version_id: "00000000-0000-0000-0000-000000000000")).to be_nil
+    end
   end
 
   describe "PATCH is an upsert by dimension" do

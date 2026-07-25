@@ -22,12 +22,12 @@ RSpec.describe "Foresight relevance filtering" do
   end
 
   def forecast_for(dna)
-    future = { "id" => "f1", "session_id" => "s1",
+    future = { "id" => "f1", "travel_dna_version_id" => "dna-s1",
                "accommodation" => { "catalogue_id" => "prop-sochi-sea" },
                "destination" => { "city_code" => "AER" },
                "check_in" => "2026-07-08", "check_out" => "2026-07-15" }
     allow(Planning::Futures).to receive(:find).and_return(future)
-    allow(Planning::Sessions).to receive(:find).with(id: "s1").and_return("travel_dna" => dna)
+    allow(Planning::TravelDna).to receive(:find).with(version_id: "dna-s1").and_return(dna)
     allow(Supply::Geo).to receive(:features).and_return(bad_geo)
     allow(Supply::Climate).to receive(:normals).and_return(cold_july)
 
@@ -110,11 +110,11 @@ RSpec.describe "Foresight relevance filtering" do
       allow(Supply::Climate).to receive(:normals).and_return("temp_mean_c" => 31.0, "freshness" => "cached")
       dna = { "elements" => [{ "dimension" => "climate_warm", "kind" => "preference", "target" => "cool",
                                "weight" => 0.9 }] }
-      future = { "id" => "f1", "session_id" => "s1", "accommodation" => { "catalogue_id" => "p" },
+      future = { "id" => "f1", "travel_dna_version_id" => "dna-s1", "accommodation" => { "catalogue_id" => "p" },
                  "destination" => { "city_code" => "AER" }, "check_in" => "2026-07-08",
                  "check_out" => "2026-07-15" }
       allow(Planning::Futures).to receive(:find).and_return(future)
-      allow(Planning::Sessions).to receive(:find).and_return("travel_dna" => dna)
+      allow(Planning::TravelDna).to receive(:find).with(version_id: "dna-s1").and_return(dna)
 
       forecast = Foresight::Forecasts.for_future(future_id: "f1")
       expect(forecast["risks"].map { |risk| risk["risk_type"] }).to eq(%w[weather_mismatch])

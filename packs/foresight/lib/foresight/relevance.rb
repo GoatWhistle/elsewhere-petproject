@@ -9,16 +9,13 @@ module Foresight
 
     module_function
 
-    # The DNA behind a future, through Planning's published interface.
-    #
-    # The route is the future's session: `travel_dna_version_id` identifies the version but nothing published
-    # resolves it, so the session is what we have. If it cannot be reached we do not guess — we filter nothing,
-    # because showing a risk the traveller does not care about is a smaller failure than hiding one they do.
+    # The DNA behind a future, through Planning's published interface. Unreachable means filter nothing:
+    # showing an irrelevant risk is a smaller failure than hiding a relevant one.
     def dna_for(future)
-      session_id = future["session_id"]
-      return nil unless session_id
+      version_id = future["travel_dna_version_id"]
+      return nil unless version_id
 
-      Planning::Sessions.find(id: session_id)&.dig("travel_dna")
+      Planning::TravelDna.find(version_id: version_id)
     rescue StandardError
       nil
     end

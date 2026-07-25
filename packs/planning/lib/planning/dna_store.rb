@@ -118,6 +118,11 @@ module Planning
 
     def find(session_id) = latest(session_id)&.then { |version| read(version) }
 
+    def find_version(version_id)
+      version = TravelDnaVersionRecord.find_by(id: version_id)
+      version && read(version)
+    end
+
     def next_version(session_id) = (latest(session_id)&.version || 0) + 1
   end
 end

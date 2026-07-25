@@ -46,6 +46,10 @@ module Planning
 
   module TravelDna
     module_function
+
+    # Published lookup for holders of the version id a Future carries; records stay internal to Planning.
+    def find(version_id:) = DnaStore.find_version(version_id)
+
     # Party is a fact about the trip and lives on the session, not a Travel DNA dimension.
     def draft(dream, date_window, _party)
       parsed = DreamParser.parse(dream)
