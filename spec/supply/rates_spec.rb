@@ -77,6 +77,7 @@ RSpec.describe Supply::RateModel do
 
       expect(rate["amount"]).to eq("amount_minor" => (520_000 * 1.281).round * 7, "currency" => "RUB")
       expect(rate["basis"]).to eq("modeled")
+      expect(rate["freshness"]).to eq(described_class::MODELED_FRESHNESS)
       expect(rate["calibration"]).to include("model_version" => described_class::VERSION,
                                              "observed_base_minor" => 520_000,
                                              "statement" => "the base is observed; the seasonality is modeled")

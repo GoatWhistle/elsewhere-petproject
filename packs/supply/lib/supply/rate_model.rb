@@ -2,17 +2,12 @@ require "bigdecimal"
 require "date"
 
 module Supply
-  # The room rate (A-7, DEC-029).
-  #
-  #     rate = observed base level (harvest) × seasonal factor (climate + popularity) × nights
-  #
-  # **Only the base is observed.** "Busier season costs more" is our hypothesis, not a measurement, so the
-  # wording that matters is "the base is observed, the seasonality is modeled" — never "calibrated on observed
-  # prices". This is the one synthetic number in the product (rule 7) and it is labelled `modeled` everywhere.
-  #
-  # Deterministic by construction: the factor is a stored row per destination and month, and the rate is that
-  # row times an integer. The same inputs always give the same rate, which is what stops a Simulator delta from
-  # drifting on its own.
+  # The room rate (DEC-029): observed base level × seasonal factor (climate + popularity) × nights.
+  # Only the base is observed — "busier season costs more" is a hypothesis, so the wording is "base observed,
+  # seasonality modeled", never "calibrated on observed prices". The one synthetic number in the product.
+  # `freshness` has no `modeled` value: `cached` says the calibration inputs came from stored data, while
+  # `basis: "modeled"` identifies the output. Deterministic: a stored row per destination and month times an
+  # integer, so a Simulator delta cannot drift on its own.
   module RateModel
     # Bump when the formula changes: old calibrations stay readable and every Rate names the one that made it.
     VERSION = "seasonal-v2".freeze
@@ -25,6 +20,7 @@ module Supply
     # place is.
     AMPLITUDE_MIN = 0.15
     AMPLITUDE_MAX = 0.45
+    MODELED_FRESHNESS = "cached".freeze
 
     # Reviews per property at which a destination is half-way to "busy". Fixed: a denominator drawn from the
     # current corpus would rescore every existing Future as the corpus grew.
@@ -181,7 +177,7 @@ module Supply
           "per_night" => nightly
         },
         "handoff_url" => property.source_url,
-        "freshness" => "cached",
+        "freshness" => MODELED_FRESHNESS,
         # A room is a room: the base is per room per night, and party size does not change it here.
         "unassessed" => adults.to_i > 1 ? { "occupancy" => "the observed base is per room; it is not adjusted for party size" } : {}
       }
@@ -193,7 +189,7 @@ module Supply
     end
 
     def unavailable(reason)
-      { "amount" => nil, "basis" => "modeled", "freshness" => "cached",
+      { "amount" => nil, "basis" => "modeled", "freshness" => MODELED_FRESHNESS,
         "calibration" => { "model_version" => VERSION }, "unassessed" => { "amount" => reason } }
     end
   end
