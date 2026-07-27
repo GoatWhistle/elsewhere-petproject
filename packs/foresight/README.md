@@ -46,7 +46,7 @@ measure noise, and nobody has told us which way the room faces. Presenting that 
 measurement is the fastest way to destroy the product's credibility, so the label never gets upgraded by how
 confident the prose sounds.
 
-Thresholds are Foresight's to set (OQ-D) and are thresholds, not measurements.
+Thresholds belong to Foresight and are thresholds, not measurements.
 
 ## Severity and confidence are separate axes (DEC-030)
 

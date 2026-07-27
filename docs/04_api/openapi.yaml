@@ -11,12 +11,12 @@ info:
     [DEC-008](../00_project/decision_log.md) — five people build in parallel against it, so it exists
     before the implementation, not after.
 
-    Design rules that this document deliberately encodes (rationale in `api_principles.md`):
+    Design rules that this document deliberately encodes (rationale in `01_product/mechanics.md`):
 
     1. **Money is an integer in minor units plus a currency.** Never a float. Currency is RUB (DEC-007).
     2. **Every price component states whether it is bookable or an estimate.** The hotel is bookable through us;
        the flight price is real cached market data but not a quote we can honour; the transfer is modeled.
-       This is a product honesty requirement (see `01_product/futures.md`), so it lives in the schema rather
+       This is a product honesty requirement (see `01_product/mechanics.md`), so it lives in the schema rather
        than in UI copy.
     3. **Anything that can be slow is a job.** Future generation, simulation, and mitigation return `202` with a
        job reference. Nothing important blocks an HTTP request.
@@ -173,7 +173,7 @@ paths:
       summary: List the current Futures for the session
       description: |
         Returns the latest version of each Future. May contain **fewer than three** entries: the system returns
-        two with an explanation rather than padding with near-duplicates (see `01_product/futures.md`).
+        two with an explanation rather than padding with near-duplicates (see `01_product/mechanics.md`).
         `diversity_note` explains the shape of the set.
       operationId: listFutures
       responses:
@@ -420,7 +420,7 @@ components:
       additionalProperties: false
       description: |
         The structured model of what matters to this user for this trip.
-        Not filters — see `01_product/travel_dna.md` for the distinction and the degeneration test.
+        Not filters — see `01_product/mechanics.md` for the distinction and the degeneration test.
 
         Versioned (DEC-023). Editing preferences creates a new version rather than mutating this one, so a score
         the user has already seen never changes retroactively, and a delta is always computed against one DNA.
@@ -920,7 +920,7 @@ components:
           type: string
           enum: [verified_fact, derived_metric, model_inference]
           description: |
-            The four-way separation from `01_product/experience_forecast.md`, made structural.
+            The four-way separation from `01_product/mechanics.md`, made structural.
             (The fourth state, uncertainty, is expressed by `coverage` and by low confidence.)
             Presenting an inference with the authority of a measurement is the fastest way to lose the user's trust.
         affected_dimension:

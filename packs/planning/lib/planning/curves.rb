@@ -1,7 +1,7 @@
 module Planning
   # The satisfaction curves, as data (DEC-024): one table of breakpoints with linear interpolation, not
   # conditionals scattered through the scorer, so a breakpoint can be argued about and tested on its own.
-  # Copied from `01_product/experience_match.md`, which is the source of truth.
+  # Mirrored in `01_product/mechanics.md`; this constant is the executable source of truth.
   module Curves
     # More is better: the user wants as much of this as they can get.
     # Each entry is [feature value, satisfaction], ascending, interpolated linearly and flat outside the ends.

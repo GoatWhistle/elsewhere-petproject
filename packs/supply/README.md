@@ -91,7 +91,7 @@ medians converge (4 700–6 500 ₽) *by design* — a traveller choosing Kazan 
 comparing city medians would score that as "no spread" and be exactly wrong.
 
 The popularity axis (55 → 772 reviews per property, **14×**) is catalogue review volume — the source
-[experience_match.md](../../docs/01_product/experience_match.md) names for `crowds`. It is a popularity proxy,
+[mechanics.md](../../docs/01_product/mechanics.md) names for `crowds`. It is a popularity proxy,
 and it says so in its own `basis` field. It is not a crowd measurement.
 
 Geography is the one axis that is a **judgement**: nothing in the harvest says "this is a mountain town". It is
@@ -240,7 +240,7 @@ seasonal comfort of 0.93 and a popularity of 0.44* — not an opinion.
 Peak months land where the places actually have them: **Sochi in August** (1.281, February 0.719),
 **Saint Petersburg in July** (1.366, winter 0.700), **Sheregesh in January** (1.197, July 0.803).
 
-### Is it defensible? (OQ-A — jointly with Foresight)
+### Is it defensible?
 
 ```sh
 bin/rails runner 'pp Supply::RateValidation.report'
@@ -292,7 +292,7 @@ SUPPLY_MODE=live bin/rails runner '...'   # needs IGNAV_API_KEY
 ```
 
 Real observed fares, in both modes: `live` asks Ignav, `fixture` serves **captured responses from the same
-provider** (assumption A-007). Every fare carries `as_of` — a fare we cannot sell is only honest while its age
+provider**. Every fare carries `as_of` — a fare we cannot sell is only honest while its age
 is visible — plus `stops`, `duration_min`, the provider's own `price_status`, and a `coverage` block.
 
 ### The A-0 finding was wrong, and this is the correction
